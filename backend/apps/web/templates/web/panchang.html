@@ -1,0 +1,46 @@
+{% extends "web/base.html" %}
+{% block title %}Panchang · Astrology{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Panchang for any date &amp; place</h2>
+  <form id="f">
+    <div class="row">
+      <div><label>Date (local)</label><input name="date" type="date"></div>
+      <div><label>Time (local)</label><input name="time" type="time" step="1"></div>
+      <div><label>Latitude</label><input name="latitude" type="number" step="any" value="25.3176" required></div>
+      <div><label>Longitude</label><input name="longitude" type="number" step="any" value="82.9739" required></div>
+      <div><label>Timezone (blank = auto)</label><input name="tz_name"></div>
+    </div>
+    <p><button>Calculate</button> <span class="muted">Blank date/time = now. Defaults to Varanasi.</span></p>
+  </form>
+</div>
+<div class="card" id="out"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+  requireLogin();
+  $("#f").onsubmit = async e => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(e.target).entries());
+    const body = { latitude: Number(d.latitude), longitude: Number(d.longitude) };
+    if (d.date) body.date = d.date;
+    if (d.time) body.time = d.time;
+    if (d.tz_name) body.tz_name = d.tz_name;
+    try {
+      const r = await api("/vedic/panchang/", { method: "POST", body });
+      const p = r.panchang, span = x => ` <span class="muted">(${fmtDate(x.start)} → ${fmtDate(x.end)})</span>`;
+      $("#out").innerHTML = `<div class="kv">
+        <div>Moment</div><div>${fmtDate(r.meta.birth_local)} ${esc(r.meta.timezone)}</div>
+        <div>Tithi</div><div>${esc(p.tithi.paksha)} ${esc(p.tithi.name)}${span(p.tithi)}</div>
+        <div>Vara</div><div>${esc(p.vara.name)}</div>
+        <div>Nakshatra</div><div>${esc(p.nakshatra.name)} pada ${p.nakshatra.pada}${span(p.nakshatra)}</div>
+        <div>Yoga</div><div>${esc(p.yoga.name)}${span(p.yoga)}</div>
+        <div>Karana</div><div>${esc(p.karana.name)}${span(p.karana)}</div>
+        <div>Lunar month</div><div>${p.lunar_month.is_adhika ? "Adhika " : ""}${esc(p.lunar_month.amanta)}</div>
+        <div>Sunrise / Sunset</div><div>${fmtDate(p.sunrise)} / ${fmtDate(p.sunset)}</div>
+        <div>Moonrise / Moonset</div><div>${fmtDate(p.moonrise)} / ${fmtDate(p.moonset)}</div>
+        <div>Rising sign</div><div>${esc(r.lagna.sign)} ${esc(r.lagna.degree_dms)}</div></div>`;
+    } catch (err) { showError($("#out"), err); }
+  };
+</script>
+{% endblock %}

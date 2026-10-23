@@ -1,0 +1,127 @@
+{% extends "web/base.html" %}
+{% block title %}Profiles · Astrology{% endblock %}
+{% block content %}
+<div class="grid2">
+  <div class="card">
+    <h2>Birth profiles</h2>
+    <div id="list" class="scroll"><p class="muted">Loading…</p></div>
+  </div>
+  <div class="card">
+    <h2 id="formTitle">New profile</h2>
+    <form id="pf">
+      <input type="hidden" name="id">
+      <div class="row">
+        <div><label>Name</label><input name="name" required></div>
+        <div><label>Gender</label><select name="gender"><option value=""></option><option>male</option><option>female</option><option>other</option></select></div>
+        <div><label>Relation</label><select name="relation"><option>self</option><option>family</option><option>friend</option><option>client</option><option>other</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>Birth date</label><input name="birth_date" type="date" required></div>
+        <div><label>Birth time (local)</label><input name="birth_time" type="time" step="1"></div>
+        <div><label>Time known?</label><select name="time_known"><option value="true">Yes</option><option value="false">No (use noon)</option></select></div>
+      </div>
+      <label>Birth place (search)</label>
+      <div class="suggest">
+        <input id="placeQ" placeholder="Type a city, e.g. Varanasi or Springfield, Illinois" autocomplete="off">
+        <ul id="placeList" hidden></ul>
+      </div>
+      <input type="hidden" name="place_id">
+      <div class="row">
+        <div><label>Latitude</label><input name="latitude" type="number" step="any"></div>
+        <div><label>Longitude</label><input name="longitude" type="number" step="any"></div>
+        <div><label>Timezone (IANA; blank = auto)</label><input name="tz_name" placeholder="Asia/Kolkata"></div>
+      </div>
+      <label>Place label</label><input name="place_label">
+      <div class="row">
+        <div><label>Lunar node</label><select name="node_mode"><option value="mean">Mean</option><option value="true">True</option></select></div>
+        <div><label>Ayanamsa</label><select name="ayanamsa"><option value="lahiri">Lahiri</option></select></div>
+      </div>
+      <label>Notes</label><textarea name="notes" rows="2"></textarea>
+      <p><button>Save</button> <button type="button" class="secondary" id="resetBtn">Clear</button></p>
+    </form>
+    <div id="formMsg"></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  requireLogin();
+  const pf = $("#pf");
+  let profiles = [];
+
+  async function load() {
+    try {
+      const r = await api("/profiles/", { query: { page_size: 100 } });
+      profiles = r.results;
+      if (!profiles.length) { $("#list").innerHTML = `<p class="muted">No profiles yet. Create one →</p>`; return; }
+      $("#list").innerHTML = `<table><tr><th>Name</th><th>Born (local)</th><th>Place</th><th></th></tr>` +
+        profiles.map(p => `<tr>
+          <td><a href="/ui/profiles/${p.id}/">${esc(p.name)}</a></td>
+          <td>${esc(p.birth_date)} ${esc(p.birth_time)}${p.time_known ? "" : " <span class='pill'>approx</span>"}</td>
+          <td>${esc(p.place_label || `${num(p.latitude)}, ${num(p.longitude)}`)}<br><span class="muted">${esc(p.tz_name)} (UTC${p.utc_offset_minutes >= 0 ? "+" : ""}${(p.utc_offset_minutes / 60).toFixed(2)})</span></td>
+          <td><button class="secondary" onclick="edit('${p.id}')">Edit</button>
+              <button class="secondary" onclick="del('${p.id}')">Delete</button></td></tr>`).join("") + `</table>`;
+    } catch (err) { showError($("#list"), err); }
+  }
+
+  function edit(id) {
+    const p = profiles.find(x => x.id === id);
+    $("#formTitle").textContent = `Edit ${p.name}`;
+    for (const el of pf.elements) if (el.name && p[el.name] !== undefined && p[el.name] !== null) el.value = String(p[el.name]);
+    pf.place_id.value = p.place_id || "";
+    $("#placeQ").value = p.place_label || "";
+  }
+
+  async function del(id) {
+    if (!confirm("Delete this profile?")) return;
+    try { await api(`/profiles/${id}/`, { method: "DELETE" }); load(); } catch (err) { alert(err.message); }
+  }
+
+  $("#resetBtn").onclick = () => { pf.reset(); pf.id.value = ""; pf.place_id.value = ""; $("#formTitle").textContent = "New profile"; };
+
+  pf.onsubmit = async e => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(pf).entries());
+    const id = d.id; delete d.id;
+    const body = {
+      name: d.name, gender: d.gender, relation: d.relation, birth_date: d.birth_date,
+      birth_time: d.birth_time || null, time_known: d.time_known === "true",
+      place_label: d.place_label, node_mode: d.node_mode, ayanamsa: d.ayanamsa, notes: d.notes,
+    };
+    if (d.place_id) body.place_id = Number(d.place_id); else body.place_id = null;
+    if (d.latitude !== "") body.latitude = Number(d.latitude);
+    if (d.longitude !== "") body.longitude = Number(d.longitude);
+    if (d.tz_name) body.tz_name = d.tz_name;
+    try {
+      const saved = await api(id ? `/profiles/${id}/` : "/profiles/", { method: id ? "PATCH" : "POST", body });
+      $("#formMsg").innerHTML = `<p class="ok">Saved. <a href="/ui/profiles/${saved.id}/">Open chart →</a></p>`;
+      load();
+    } catch (err) { showError($("#formMsg"), err); }
+  };
+
+  // Place autocomplete
+  let timer;
+  $("#placeQ").oninput = e => {
+    clearTimeout(timer);
+    const q = e.target.value.trim();
+    if (q.length < 2) { $("#placeList").hidden = true; return; }
+    timer = setTimeout(async () => {
+      try {
+        const r = await api("/places/search/", { query: { q } });
+        const ul = $("#placeList");
+        ul.innerHTML = r.results.map((p, i) => `<li data-i="${i}">${esc(p.label)} <span class="muted">(${num(p.latitude)}, ${num(p.longitude)} · ${esc(p.timezone)})</span></li>`).join("")
+          || `<li class="muted">No matches — enter coordinates manually. (Did you run load_places?)</li>`;
+        ul.hidden = false;
+        ul.querySelectorAll("li[data-i]").forEach(li => li.onclick = () => {
+          const p = r.results[li.dataset.i];
+          pf.place_id.value = p.id; pf.latitude.value = p.latitude; pf.longitude.value = p.longitude;
+          pf.tz_name.value = p.timezone; pf.place_label.value = p.label; $("#placeQ").value = p.label; ul.hidden = true;
+        });
+      } catch (err) { console.error(err); }
+    }, 250);
+  };
+  ["latitude", "longitude"].forEach(n => pf[n].addEventListener("input", () => { pf.place_id.value = ""; }));
+
+  load();
+</script>
+{% endblock %}

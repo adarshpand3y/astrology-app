@@ -1,0 +1,227 @@
+{% extends "web/base.html" %}
+{% block title %}Chart · Astrology{% endblock %}
+{% block content %}
+<div class="card">
+  <h1 id="pname">…</h1>
+  <div id="pmeta" class="muted"></div>
+</div>
+<div class="tabs" id="tabs">
+  <button data-tab="chart" class="active">Chart</button>
+  <button data-tab="planets">Planets</button>
+  <button data-tab="panchang">Panchang &amp; Avakhada</button>
+  <button data-tab="dasha">Vimshottari</button>
+  <button data-tab="shadbala">Shadbala</button>
+  <button data-tab="bhavabala">Bhava Bala</button>
+</div>
+<div id="msg"></div>
+
+<section data-pane="chart">
+  <div class="grid2">
+    <div class="card">
+      <div class="row" style="align-items:end">
+        <div><label>Division</label><select id="vargaSel"></select></div>
+        <div><label>Style</label><select id="styleSel"><option value="north">North Indian</option><option value="south">South Indian</option></select></div>
+      </div>
+      <div id="chartSvg" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h3>Lagna &amp; houses</h3>
+      <div id="lagnaBox"></div>
+      <h3 style="margin-top:14px">Bhava chalit (Sripati)</h3>
+      <div id="chalitBox" class="scroll"></div>
+    </div>
+  </div>
+</section>
+
+<section data-pane="planets" hidden><div class="card scroll" id="planetsBox"></div>
+  <div class="card scroll"><h3>Panchadha maitri (compound relationships)</h3><div id="relBox"></div></div></section>
+
+<section data-pane="panchang" hidden>
+  <div class="grid2">
+    <div class="card"><h3>Panchang at birth</h3><div id="panchangBox"></div></div>
+    <div class="card"><h3>Avakhada chakra</h3><div id="avakhadaBox"></div></div>
+  </div>
+</section>
+
+<section data-pane="dasha" hidden>
+  <div class="card">
+    <div id="dashaBalance" class="muted"></div>
+    <div id="dashaCurrent" style="margin:8px 0 14px"></div>
+    <p class="muted">Click a period to expand: Mahadasha → Antardasha → Pratyantardasha → Sookshma → Prana.</p>
+    <div class="tree" id="dashaTree"></div>
+  </div>
+</section>
+
+<section data-pane="shadbala" hidden><div class="card scroll" id="shadbalaBox"></div></section>
+<section data-pane="bhavabala" hidden><div class="card scroll" id="bhavabalaBox"></div></section>
+{% endblock %}
+{% block scripts %}
+<script>
+  requireLogin();
+  const pid = location.pathname.split("/").filter(Boolean).pop();
+  const P = `/profiles/${pid}`;
+  const loaded = {};
+  let chart = null, current = [];
+
+  const kv = obj => `<div class="kv">${Object.entries(obj).map(([k, v]) => `<div>${esc(k)}</div><div>${v}</div>`).join("")}</div>`;
+
+  // tabs
+  $("#tabs").onclick = e => {
+    const t = e.target.dataset.tab; if (!t) return;
+    document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
+    document.querySelectorAll("section[data-pane]").forEach(s => s.hidden = s.dataset.pane !== t);
+    if (!loaded[t]) { loaded[t] = true; ({ dasha: loadDasha, shadbala: loadShadbala, bhavabala: loadBhavabala })[t]?.(); }
+  };
+
+  async function init() {
+    try {
+      const [p, c] = await Promise.all([api(`${P}/`), api(`${P}/chart/`)]);
+      chart = c;
+      $("#pname").textContent = p.name;
+      $("#pmeta").innerHTML = `${esc(p.birth_date)} ${esc(p.birth_time)} (${esc(p.tz_name)}) · ${esc(p.place_label || "")} ` +
+        `${num(p.latitude, 4)}, ${num(p.longitude, 4)} · Ayanamsa ${esc(c.meta.ayanamsa.name)} ${esc(c.meta.ayanamsa.dms)} · ${esc(c.meta.node_mode)} node · engine ${esc(c.meta.engine_version)}`;
+      renderChart(); renderPlanets(); renderPanchang();
+    } catch (err) { showError($("#msg"), err); }
+  }
+
+  function renderChart() {
+    const sel = $("#vargaSel");
+    if (!sel.options.length) {
+      sel.innerHTML = Object.values(chart.vargas).map(v => `<option value="${v.code}">${v.code} · ${v.name}</option>`).join("");
+      sel.onchange = $("#styleSel").onchange = drawChart;
+    }
+    drawChart();
+    const l = chart.lagna;
+    $("#lagnaBox").innerHTML = kv({
+      "Lagna": `${esc(l.sign)} ${esc(l.degree_dms)}`, "Nakshatra": `${esc(l.nakshatra.name)} pada ${l.nakshatra.pada} (${esc(l.nakshatra.lord)})`,
+      "Lagna lord": esc(l.sign_lord),
+    }) + `<table style="margin-top:8px"><tr><th>House</th><th>Sign</th><th>Lord</th><th>Occupants</th></tr>` +
+      chart.houses.map(h => `<tr><td>${h.house}</td><td>${esc(h.sign)}</td><td>${esc(h.lord)}</td><td>${esc(h.occupants.join(" "))}</td></tr>`).join("") + `</table>`;
+    $("#chalitBox").innerHTML = `<table><tr><th>Bhava</th><th class="n">Start</th><th class="n">Madhya</th><th>Sign</th><th>Occupants</th></tr>` +
+      chart.bhava_chalit.map(b => `<tr><td>${b.bhava}</td><td class="n">${num(b.start)}</td><td class="n">${num(b.madhya)}</td><td>${esc(b.sign)}</td><td>${esc(b.occupants.join(" "))}</td></tr>`).join("") + `</table>`;
+  }
+
+  function drawChart() {
+    const v = chart.vargas[$("#vargaSel").value];
+    const extra = {};
+    if (v.code === "D1") chart.planets.forEach(p => { if (p.retrograde && !["Ra", "Ke"].includes(p.code)) extra[p.code] = "®"; });
+    $("#chartSvg").innerHTML = ($("#styleSel").value === "north" ? northIndianSVG : southIndianSVG)(v, extra);
+  }
+
+  function renderPlanets() {
+    $("#planetsBox").innerHTML = `<table><tr><th>Planet</th><th>Sign</th><th class="n">Degree</th><th>Nakshatra</th><th>Pada</th><th>Nak lord</th>
+      <th>House</th><th>Bhava</th><th>Dignity</th><th>Navamsa</th><th class="n">Speed °/d</th><th>Avastha</th><th>Flags</th></tr>` +
+      chart.planets.map(p => `<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.sign)}</td><td class="n">${esc(p.degree_dms)}</td>
+        <td>${esc(p.nakshatra.name)}</td><td>${p.nakshatra.pada}</td><td>${esc(p.nakshatra.lord)}</td><td>${p.house}</td><td>${p.bhava}</td>
+        <td>${esc(p.dignity.replace("_", " "))}</td><td>${esc(p.navamsa_sign)}</td><td class="n">${num(p.speed, 4)}</td>
+        <td>${esc(p.avastha.baladi)} / ${esc(p.avastha.jagradadi)}</td>
+        <td>${p.retrograde ? "<span class='pill r'>R</span>" : ""}${p.combust ? "<span class='pill c'>Combust</span>" : ""}</td></tr>`).join("") + `</table>`;
+    const rel = chart.relationships, ps = Object.keys(rel);
+    $("#relBox").innerHTML = `<table><tr><th></th>${ps.map(p => `<th>${p}</th>`).join("")}</tr>` +
+      ps.map(a => `<tr><th>${a}</th>${ps.map(b => `<td>${a === b ? "—" : esc((rel[a][b] || "").replace("_", " "))}</td>`).join("")}</tr>`).join("") + `</table>`;
+  }
+
+  function renderPanchang() {
+    const p = chart.panchang;
+    const span = x => `<br><span class="muted">${fmtDate(x.start)} → ${fmtDate(x.end)}</span>`;
+    $("#panchangBox").innerHTML = kv({
+      "Tithi": `${esc(p.tithi.paksha)} ${esc(p.tithi.name)} (#${p.tithi.index})${span(p.tithi)}`,
+      "Vara": `${esc(p.vara.name)} / ${esc(p.vara.sanskrit)} (lord ${esc(p.vara.lord)})`,
+      "Nakshatra": `${esc(p.nakshatra.name)} pada ${p.nakshatra.pada} (lord ${esc(p.nakshatra.lord)})${span(p.nakshatra)}`,
+      "Yoga": `${esc(p.yoga.name)}${span(p.yoga)}`,
+      "Karana": `${esc(p.karana.name)}${span(p.karana)}`,
+      "Lunar month": `${p.lunar_month.is_adhika ? "Adhika " : ""}${esc(p.lunar_month.amanta)} (amanta)`,
+      "Ayana": esc(p.ayana),
+      "Sun / Moon sign": `${esc(p.sun_sign)} / ${esc(p.moon_sign)}`,
+      "Sunrise / Sunset": `${fmtDate(p.sunrise)} / ${fmtDate(p.sunset)}`,
+      "Moonrise / Moonset": `${fmtDate(p.moonrise)} / ${fmtDate(p.moonset)}`,
+      "Birth": p.is_day_birth ? "Day" : "Night",
+      "Day / night length": `${num(p.day_duration_hours)} h / ${num(p.night_duration_hours)} h`,
+      "Dasha balance": `${esc(chart.dasha_balance.lord)} ${chart.dasha_balance.years}y ${chart.dasha_balance.months}m ${num(chart.dasha_balance.days, 0)}d`,
+    });
+    const a = chart.avakhada;
+    $("#avakhadaBox").innerHTML = kv(Object.fromEntries(Object.entries(a).map(([k, v]) => [k.replaceAll("_", " "), esc(v)])));
+  }
+
+  // --- Dasha ---------------------------------------------------------------------
+  async function loadDasha() {
+    try {
+      const [tree, cur] = await Promise.all([api(`${P}/dashas/`, { query: { depth: 1 } }), api(`${P}/dashas/current/`)]);
+      current = cur.periods.map(p => p.path);
+      const b = tree.balance_at_birth;
+      $("#dashaBalance").textContent = `Balance at birth: ${b.lord} ${b.years}y ${b.months}m ${Math.round(b.days)}d`;
+      $("#dashaCurrent").innerHTML = `<b>Running now:</b> ` + cur.periods.map(p => `<span class="pill">${esc(p.level_name)}: ${esc(p.lord)} → ${fmtDate(p.end).slice(0, 10)}</span>`).join(" ");
+      $("#dashaTree").innerHTML = `<ul>${tree.periods.map(nodeHtml).join("")}</ul>`;
+      bindTree($("#dashaTree"));
+    } catch (err) { showError($("#dashaTree"), err); }
+  }
+
+  function nodeHtml(p) {
+    const isCur = current.includes(p.path);
+    return `<li data-path="${esc(p.path)}" data-level="${p.level}"><div class="${isCur ? "cur" : ""}">
+      <span class="toggle">${p.level < 5 ? "▸" : "·"}</span><span class="lord">${esc(p.path.replaceAll("/", " › "))}</span>
+      <span>${fmtDate(p.start)}</span><span class="muted">→</span><span>${fmtDate(p.end)}</span></div></li>`;
+  }
+
+  function bindTree(root) {
+    root.querySelectorAll("li > div").forEach(div => {
+      if (div.dataset.bound) return; div.dataset.bound = 1;
+      div.onclick = async () => {
+        const li = div.parentElement;
+        if (Number(li.dataset.level) >= 5) return;
+        const existing = li.querySelector(":scope > ul");
+        if (existing) { existing.remove(); div.querySelector(".toggle").textContent = "▸"; return; }
+        try {
+          const r = await api(`${P}/dashas/drill/`, { query: { path: li.dataset.path } });
+          li.insertAdjacentHTML("beforeend", `<ul>${r.periods.map(nodeHtml).join("")}</ul>`);
+          div.querySelector(".toggle").textContent = "▾";
+          bindTree(li);
+        } catch (err) { alert(err.message); }
+      };
+    });
+  }
+
+  // --- Strengths -----------------------------------------------------------------
+  async function loadShadbala() {
+    try {
+      const s = await api(`${P}/shadbala/`);
+      const ps = Object.keys(s.planets);
+      const row = (label, f, cls = "") => `<tr class="${cls}"><td>${label}</td>${ps.map(p => `<td class="n">${f(s.planets[p])}</td>`).join("")}</tr>`;
+      const sub = (grp, key) => row(`&nbsp;&nbsp;${key}`, r => num(r[grp][key]));
+      let h = `<h3>Shadbala (virupas unless noted)</h3><table><tr><th>Component</th>${ps.map(p => `<th class="n">${p}</th>`).join("")}</tr>`;
+      h += row("<b>Sthana bala</b>", r => `<b>${num(r.totals.sthana)}</b>`);
+      ["uchcha", "saptavargaja", "ojhayugma", "kendradi", "drekkana"].forEach(k => h += sub("sthana", k));
+      h += row("<b>Dig bala</b>", r => `<b>${num(r.dig)}</b>`);
+      h += row("<b>Kala bala</b>", r => `<b>${num(r.totals.kala)}</b>`);
+      ["nathonnata", "paksha", "tribhaga", "abda", "masa", "vara", "hora", "ayana", "yuddha"].forEach(k => h += sub("kala", k));
+      h += row("<b>Chesta bala</b>", r => `<b>${num(r.chesta)}</b>`);
+      h += row("<b>Naisargika bala</b>", r => `<b>${num(r.naisargika)}</b>`);
+      h += row("<b>Drik bala</b>", r => `<b>${num(r.drik)}</b>`);
+      h += row("<b>Total (virupas)</b>", r => `<b>${num(r.total_virupas)}</b>`);
+      h += row("<b>Total (rupas)</b>", r => `<b>${num(r.total_rupas)}</b>`);
+      h += row("Required (rupas)", r => num(r.required_rupas));
+      h += row("Ratio", r => `<span class="${r.ratio >= 1 ? "ok" : ""}">${num(r.ratio)}</span>`);
+      h += row("Rank", r => r.rank);
+      h += row("Ishta phala", r => num(r.ishta_phala));
+      h += row("Kashta phala", r => num(r.kashta_phala));
+      h += `</table><p class="muted">Kala lords — year: ${esc(s.kala_lords.abda)}, month: ${esc(s.kala_lords.masa)}, day: ${esc(s.kala_lords.vara)}, hora: ${esc(s.kala_lords.hora)}; tribhaga: ${esc(s.tribhaga_lord)}. Ahargana ${s.kala_lords.ahargana}.${s.wars.length ? " Graha yuddha: " + s.wars.map(w => `${w.winner} beats ${w.loser}`).join(", ") : ""}</p>`;
+      $("#shadbalaBox").innerHTML = h;
+    } catch (err) { showError($("#shadbalaBox"), err); }
+  }
+
+  async function loadBhavabala() {
+    try {
+      const b = await api(`${P}/bhavabala/`);
+      $("#bhavabalaBox").innerHTML = `<h3>Bhava Bala</h3><table><tr><th>Bhava</th><th>Sign</th><th>Lord</th><th>Occupants</th>
+        <th class="n">Adhipati</th><th class="n">Dig</th><th class="n">Drishti</th><th class="n">Occupation</th><th class="n">Day/Night</th>
+        <th class="n">Total (virupas)</th><th class="n">Rupas</th><th class="n">Rank</th></tr>` +
+        b.map(x => `<tr><td>${x.bhava}</td><td>${esc(x.sign)}</td><td>${esc(x.lord)}</td><td>${esc(x.occupants.join(" "))}</td>
+          <td class="n">${num(x.components.bhavadhipati)}</td><td class="n">${num(x.components.dig)}</td><td class="n">${num(x.components.drishti)}</td>
+          <td class="n">${num(x.components.occupation)}</td><td class="n">${num(x.components.day_night)}</td>
+          <td class="n"><b>${num(x.total_virupas)}</b></td><td class="n">${num(x.total_rupas)}</td><td class="n">${x.rank}</td></tr>`).join("") + `</table>`;
+    } catch (err) { showError($("#bhavabalaBox"), err); }
+  }
+
+  init();
+</script>
+{% endblock %}

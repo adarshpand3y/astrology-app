@@ -1,0 +1,70 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Astrology test UI{% endblock %}</title>
+  <style>
+    :root { --bg:#f7f5f0; --card:#fff; --ink:#222; --muted:#6b6b6b; --line:#ddd6c8; --accent:#a0441c; --ok:#2d6a4f; --bad:#b00020; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--ink); }
+    header { background:#2b2118; color:#f4e9d8; padding:10px 20px; display:flex; gap:18px; align-items:center; }
+    header a { color:#f4e9d8; text-decoration:none; } header .sp { flex:1; }
+    header .tag { font-size:11px; background:#a0441c; padding:2px 6px; border-radius:4px; }
+    main { max-width:1200px; margin:0 auto; padding:20px 16px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
+    h1,h2,h3 { margin:0 0 12px; } h2 { font-size:18px; } h3 { font-size:15px; }
+    label { display:block; font-size:12px; color:var(--muted); margin:8px 0 3px; }
+    input, select, textarea { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:5px; font:inherit; background:#fff; }
+    button { padding:7px 14px; border:0; border-radius:5px; background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+    button.secondary { background:#e9e3d6; color:var(--ink); } button:disabled { opacity:.5; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; } .row > * { flex:1; min-width:140px; }
+    .grid2 { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:16px; }
+    @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
+    table { border-collapse:collapse; width:100%; font-size:13px; }
+    th, td { border-bottom:1px solid var(--line); padding:5px 6px; text-align:left; white-space:nowrap; }
+    th { background:#f1ece2; font-weight:600; } td.n, th.n { text-align:right; font-variant-numeric: tabular-nums; }
+    .scroll { overflow-x:auto; }
+    .error { background:#fde8e8; color:var(--bad); padding:8px 10px; border-radius:5px; margin:8px 0; }
+    .error pre { margin:4px 0 0; font-size:11px; white-space:pre-wrap; }
+    .muted { color:var(--muted); } .ok { color:var(--ok); }
+    .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:16px; flex-wrap:wrap; }
+    .tabs button { background:transparent; color:var(--ink); border-radius:5px 5px 0 0; }
+    .tabs button.active { background:var(--card); border:1px solid var(--line); border-bottom-color:var(--card); margin-bottom:-1px; }
+    svg.chart { width:100%; max-width:420px; display:block; margin:auto; }
+    svg.chart .house { fill:#fffaf0; stroke:#7a5c3e; stroke-width:1.5; } svg.chart .lagna { fill:#fbe9d7; }
+    svg.chart .signnum { font-size:11px; fill:#a0441c; text-anchor:middle; }
+    svg.chart .pl { font-size:13px; font-weight:600; text-anchor:middle; fill:#222; }
+    svg.chart .center { font-size:14px; text-anchor:middle; fill:#7a5c3e; }
+    .suggest { position:relative; } .suggest ul { position:absolute; z-index:5; left:0; right:0; background:#fff; border:1px solid var(--line); list-style:none; margin:0; padding:0; max-height:240px; overflow:auto; }
+    .suggest li { padding:6px 9px; cursor:pointer; } .suggest li:hover { background:#f1ece2; }
+    .tree ul { list-style:none; padding-left:18px; margin:0; } .tree > ul { padding-left:0; }
+    .tree li > div { display:flex; gap:10px; padding:3px 4px; border-radius:4px; cursor:pointer; }
+    .tree li > div:hover { background:#f1ece2; } .tree .cur { background:#fbe9d7; font-weight:600; }
+    .tree .lord { width:90px; } .tree .toggle { width:14px; color:var(--muted); }
+    .kv { display:grid; grid-template-columns: max-content 1fr; gap:3px 14px; font-size:13px; } .kv div:nth-child(odd) { color:var(--muted); }
+    .pill { display:inline-block; padding:1px 6px; border-radius:9px; font-size:11px; background:#eee; margin-right:3px; }
+    .pill.r { background:#fde8e8; } .pill.c { background:#fff2cc; }
+  </style>
+  <script src="{% static 'web/api.js' %}"></script>
+</head>
+<body>
+<header>
+  <strong>☉ Astrology</strong> <span class="tag">TEST UI</span>
+  <a href="/ui/profiles/">Profiles</a>
+  <a href="/ui/panchang/">Panchang</a>
+  <a href="/api/docs/" target="_blank">API docs</a>
+  <span class="sp"></span>
+  <span id="whoami" class="muted"></span>
+  <a href="#" id="logoutLink" onclick="logout();return false;" style="display:none">Logout</a>
+</header>
+<main>{% block content %}{% endblock %}</main>
+<script>
+  (function () {
+    const u = auth.user();
+    if (u && auth.access) { $("#whoami").textContent = u.email; $("#logoutLink").style.display = ""; }
+  })();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

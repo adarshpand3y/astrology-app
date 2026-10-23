@@ -1,0 +1,108 @@
+{% extends "web/base.html" %}
+{% block title %}Sign in · Astrology{% endblock %}
+{% block content %}
+<div class="grid2">
+  <div class="card">
+    <h2>Sign in</h2>
+    <form id="loginForm">
+      <label>Email</label><input name="email" type="email" required>
+      <label>Password</label><input name="password" type="password" required>
+      <p><button>Sign in</button> <a href="#" id="forgotLink">Forgot password?</a></p>
+    </form>
+    <div id="loginMsg"></div>
+  </div>
+  <div class="card">
+    <h2>Create account</h2>
+    <form id="registerForm">
+      <label>Email</label><input name="email" type="email" required>
+      <label>Password</label><input name="password" type="password" required minlength="8">
+      <p><button>Register</button></p>
+    </form>
+    <div id="registerMsg"></div>
+  </div>
+</div>
+
+<div class="card" id="otpCard" style="display:none">
+  <h2 id="otpTitle">Verify email</h2>
+  <p class="muted">A 6-digit code was emailed (in development it is printed in the runserver console).</p>
+  <form id="otpForm">
+    <div class="row">
+      <div><label>Email</label><input name="email" type="email" required></div>
+      <div><label>Code</label><input name="code" pattern="\d{6}" required></div>
+      <div id="newPwWrap" style="display:none"><label>New password</label><input name="new_password" type="password"></div>
+    </div>
+    <p><button>Submit</button> <button type="button" class="secondary" id="resendBtn">Resend code</button></p>
+  </form>
+  <div id="otpMsg"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  if (auth.access) location.href = "/ui/profiles/";
+  let otpMode = "verify";
+  const form = f => Object.fromEntries(new FormData(f).entries());
+
+  function showOtp(mode, email) {
+    otpMode = mode;
+    $("#otpCard").style.display = "";
+    $("#otpTitle").textContent = mode === "verify" ? "Verify email" : "Reset password";
+    $("#newPwWrap").style.display = mode === "reset" ? "" : "none";
+    $("#otpForm").email.value = email || "";
+  }
+
+  $("#loginForm").onsubmit = async e => {
+    e.preventDefault();
+    const data = form(e.target);
+    try {
+      auth.save(await api("/auth/login/", { method: "POST", body: data }));
+      location.href = "/ui/profiles/";
+    } catch (err) {
+      showError($("#loginMsg"), err);
+      if (err.body?.error?.code === "email_not_verified") showOtp("verify", data.email);
+    }
+  };
+
+  $("#registerForm").onsubmit = async e => {
+    e.preventDefault();
+    const data = form(e.target);
+    try {
+      const r = await api("/auth/register/", { method: "POST", body: data });
+      if (r.access) { auth.save(r); location.href = "/ui/profiles/"; return; }
+      $("#registerMsg").innerHTML = `<p class="ok">${esc(r.detail)}</p>`;
+      showOtp("verify", data.email);
+    } catch (err) { showError($("#registerMsg"), err); }
+  };
+
+  $("#forgotLink").onclick = async e => {
+    e.preventDefault();
+    const email = $("#loginForm").email.value;
+    if (!email) { $("#loginMsg").innerHTML = `<div class="error">Enter your email first.</div>`; return; }
+    try {
+      const r = await api("/auth/password-reset/request/", { method: "POST", body: { email } });
+      $("#loginMsg").innerHTML = `<p class="ok">${esc(r.detail)}</p>`;
+      showOtp("reset", email);
+    } catch (err) { showError($("#loginMsg"), err); }
+  };
+
+  $("#otpForm").onsubmit = async e => {
+    e.preventDefault();
+    const data = form(e.target);
+    try {
+      if (otpMode === "verify") {
+        auth.save(await api("/auth/verify-email/", { method: "POST", body: { email: data.email, code: data.code } }));
+        location.href = "/ui/profiles/";
+      } else {
+        const r = await api("/auth/password-reset/confirm/", { method: "POST", body: data });
+        $("#otpMsg").innerHTML = `<p class="ok">${esc(r.detail)} You can sign in now.</p>`;
+      }
+    } catch (err) { showError($("#otpMsg"), err); }
+  };
+
+  $("#resendBtn").onclick = async () => {
+    const email = $("#otpForm").email.value;
+    const path = otpMode === "verify" ? "/auth/resend-verification/" : "/auth/password-reset/request/";
+    try { const r = await api(path, { method: "POST", body: { email } }); $("#otpMsg").innerHTML = `<p class="ok">${esc(r.detail)}</p>`; }
+    catch (err) { showError($("#otpMsg"), err); }
+  };
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+Django>=6.1,<6.2
+djangorestframework>=3.16
+djangorestframework-simplejwt>=5.5
+drf-spectacular>=0.28
+django-cors-headers>=4.7
+django-environ>=0.12
+skyfield>=1.53
+numpy>=2.0
+timezonefinder>=6.5
+whitenoise>=6.9
+gunicorn>=23.0 ; sys_platform != "win32"
+pytest>=8.3
+pytest-django>=4.10

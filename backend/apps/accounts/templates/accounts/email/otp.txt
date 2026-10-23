@@ -1,0 +1,12 @@
+{% autoescape off %}{{ heading }}
+
+{{ intro }}
+
+    {{ code }}
+
+This code expires in {{ ttl }} minutes.
+
+{{ ignore }} Never share this code with anyone; {{ app_name }} will never ask you for it.
+
+{{ app_name }} · {{ tagline }}
+{% endautoescape %}
