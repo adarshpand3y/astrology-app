@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs>
+  <radialGradient id="bg" cx="50%" cy="40%" r="75%">
+    <stop offset="0" stop-color="#2B2638"/><stop offset="1" stop-color="#100F17"/></radialGradient>
+  <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+    <stop offset=".55" stop-color="#DCA85F" stop-opacity=".30"/><stop offset="1" stop-color="#DCA85F" stop-opacity="0"/></radialGradient>
+  <radialGradient id="shade" cx="34%" cy="30%" r="80%">
+    <stop offset="0" stop-color="#FFF6E4" stop-opacity=".35"/>
+    <stop offset=".45" stop-color="#FFF6E4" stop-opacity="0"/>
+    <stop offset=".78" stop-color="#1A1020" stop-opacity=".35"/>
+    <stop offset="1" stop-color="#0E0A14" stop-opacity=".78"/></radialGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#F3DDB3" stop-opacity=".9"/><stop offset=".5" stop-color="#DCA85F" stop-opacity=".25"/>
+    <stop offset="1" stop-color="#DCA85F" stop-opacity="0"/></linearGradient>
+</defs><rect width="1024" height="1024" rx="224" fill="url(#bg)"/><g transform="translate(512 512) scale(1.12) translate(-512 -512)"><circle cx="512" cy="512" r="400" fill="url(#glow)"/><clipPath id="clip512512290"><circle cx="512" cy="512" r="290"/></clipPath><g clip-path="url(#clip512512290)"><rect x="222" y="222" width="580" height="580" fill="#EAD5AF"/><path d="M222 222 Q512 248.1 802 222 L802 367.0 Q512 393.1 222 367.0 Z" fill="#E9D2AC"/><path d="M222 367.0 Q512 393.1 802 367.0 L802 439.5 Q512 465.6 222 439.5 Z" fill="#B98A55"/><path d="M222 439.5 Q512 465.6 802 439.5 L802 535.2 Q512 561.3000000000001 222 535.2 Z" fill="#F4E6C8"/><path d="M222 535.2 Q512 561.3000000000001 802 535.2 L802 622.2 Q512 648.3000000000001 222 622.2 Z" fill="#B07A45"/><path d="M222 622.2 Q512 648.3000000000001 802 622.2 L802 691.8 Q512 717.9 222 691.8 Z" fill="#EBD6AE"/><path d="M222 691.8 Q512 717.9 802 691.8 L802 749.8 Q512 775.9 222 749.8 Z" fill="#C2915E"/><path d="M222 749.8 Q512 775.9 802 749.8 L802 860.0 Q512 886.1 222 860.0 Z" fill="#EAD8B6"/><ellipse cx="599.0" cy="607.7" rx="60.9" ry="31.9" fill="#D9B184" opacity=".7"/><ellipse cx="599.0" cy="607.7" rx="46.4" ry="21.75" fill="#B2563A"/><rect x="222" y="222" width="580" height="580" fill="url(#shade)"/></g><circle cx="512" cy="512" r="286.52" fill="none" stroke="url(#rim)" stroke-width="7.25"/></g></svg>

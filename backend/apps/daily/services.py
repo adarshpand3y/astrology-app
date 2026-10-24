@@ -1,19 +1,23 @@
 """Daily companion features: home, day timeline, panchang, decisions, transits."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from django.core.cache import cache
 
 from apps.vedic import services as vedic
 from apps.vedic.content import insight as insight_text
 from apps.vedic.content import panchang as pc
+from apps.vedic.content import sky as sky_text
 from apps.vedic.content.activities import RANGES, activity_meta
 from apps.vedic.content.common import KIND_LABEL, nakshatra_name, yoga_name
 from apps.vedic.content.muhurta import period_text
 from apps.vedic.engine import transits as tr
 from apps.vedic.engine.attributes import is_combust
 from apps.vedic.engine.chart import compute_day_panchang, jsonable
+from apps.vedic.engine.constants import (
+    DEBILITATION, EXALTATION, NAKSHATRA_SPAN, NAKSHATRAS, PADA_SPAN, SIGNS, SIGNS_SANSKRIT,
+)
 from apps.vedic.engine.decision import rank_windows
 from apps.vedic.engine.muhurta import compute_muhurtas, find
 from apps.vedic.engine.panchang import tithi_name
@@ -21,6 +25,7 @@ from apps.vedic.engine.panchang import tithi_name
 from .context import DayContext
 
 GOOD_FROM_MOON = {1, 3, 6, 7, 10, 11}
+UTC = timezone.utc
 
 
 # --- natal helpers --------------------------------------------------------------------
@@ -124,7 +129,97 @@ def home(ctx: DayContext) -> dict:
                     "kind": "good" if head["favourable"] else "bad",
                     "entered_at": head["entered_at"], "fresh": fresh, "peak": peak},
         "windows": windows,
+        "now": right_now(ctx) if ctx.is_today else None,
+        "sky": sky(ctx, n, positions),
     }, ctx.tz)
+
+
+# Each period's traditional ruling graha, shown as its glyph on the "Right now" card.
+_PERIOD_GLYPH = {
+    "choghadiya.amrit": "☽", "choghadiya.shubh": "♃", "choghadiya.labh": "☿", "choghadiya.char": "♀",
+    "choghadiya.udveg": "☉", "choghadiya.kaal": "♄", "choghadiya.rog": "♂",
+    "rahu_kaal": "☊", "yamaganda": "♃", "gulika": "♄", "abhijit": "☉", "brahma": "☽",
+}
+# When periods overlap, the one to show: a kaal first, then a muhurta, then the choghadiya.
+_PRIORITY = {"kaal": 0, "muhurta": 1, "choghadiya": 2}
+
+
+def right_now(ctx: DayContext) -> dict | None:
+    """The period in force now (Rahu Kaal over the choghadiya under it, and so on), how far
+    through it we are, and what comes next."""
+    periods = []
+    for offset in (-1, 0, 1):  # before sunrise we are still in yesterday's night; near its end, tomorrow's
+        mu = compute_muhurtas(ctx.day + timedelta(days=offset), ctx.lat, ctx.lon, ctx.tz)
+        wd = mu["weekday"]
+        periods += [(p, wd) for p in mu["periods"] if p.category in _PRIORITY]
+    def active_at(t):
+        live = [pw for pw in periods if pw[0].start <= t < pw[0].end]
+        return min(live, key=lambda pw: (_PRIORITY[pw[0].category], pw[0].start), default=None)
+
+    current = active_at(ctx.now)
+    if current is None:
+        return None
+    p, wd = current
+    # Next is what this card will show at the next change: when this period ends, or earlier if a
+    # higher-priority period (e.g. Abhijit over a choghadiya) starts before then.
+    change = min([p.end] + [q.start for q, _ in periods
+                            if ctx.now < q.start < p.end and _PRIORITY[q.category] < _PRIORITY[p.category]])
+    nxt = active_at(change)
+
+    def named(period, weekday) -> str:
+        key = _abhijit_key(period, weekday) if period.key == "abhijit" else period.key
+        return period_text(key, ctx.lang)["name"]
+
+    span = (p.end - p.start).total_seconds()
+    return {
+        "key": p.key, "name": named(p, wd), "kind": p.kind, "kind_label": _kind_label(p.kind, ctx.lang),
+        "glyph": _PERIOD_GLYPH.get(p.key, "◈"), "start": p.start, "end": p.end,
+        "progress": round(min(1.0, max(0.0, (ctx.now - p.start).total_seconds() / span)), 3) if span else 0,
+        "next": {"name": named(*nxt), "start": nxt[0].start, "kind": nxt[0].kind} if nxt else None,
+    }
+
+
+def sky(ctx: DayContext, n: dict, positions: dict) -> dict:
+    """Every graha now: sign and degree, nakshatra, house from the lagna, dignity, retrograde and
+    combust, plus advice for each retrograde / combust one and until when.
+
+    Positions are live (`positions` at ctx.now); the retrograde / combust spans need a look ahead
+    and are cached per hour."""
+    ayanamsa = ctx.profile.ayanamsa
+    hour = ctx.now.astimezone(UTC).replace(minute=0, second=0, microsecond=0)
+    states = {p["planet"]: p for p in cache.get_or_set(
+        f"sky:{ayanamsa}:{hour:%Y%m%d%H}", lambda: tr.sky_now(hour, ayanamsa), 2 * 3600)}
+    planets = []
+    for code, pos in positions.items():
+        st = states[code]
+        lon, sign = pos["lon"], pos["sign"]
+        nak = int(lon // NAKSHATRA_SPAN)
+        house = tr.house(sign, n["ref_sign"])
+        dignity = "exalted" if EXALTATION[code][0] == sign else "debilitated" if DEBILITATION[code][0] == sign else None
+        active = {
+            "retrograde": st["retrograde"] or code in ("Ra", "Ke"),  # the nodes always move backwards
+            "exalted": dignity == "exalted", "debilitated": dignity == "debilitated", "combust": st["combust"],
+        }
+        guide = []
+        for cond in sky_text.CONDITIONS:
+            text = active[cond] and sky_text.guide(code, cond, house, ctx.lang)
+            if text:
+                # Retrograde / combust spells end; the nodes' motion and a sign placement don't.
+                until = st.get(f"{cond}_until") if cond in ("retrograde", "combust") and st[cond] else None
+                guide.append({"condition": cond, **text, "until": until})
+        planets.append({
+            "planet": code, "sign": SIGNS[sign], "sign_sanskrit": SIGNS_SANSKRIT[sign], "degree": lon % 30,
+            "nakshatra": NAKSHATRAS[nak], "pada": int((lon % NAKSHATRA_SPAN) // PADA_SPAN) + 1,
+            "house": house, "dignity": dignity, "retrograde": active["retrograde"], "combust": active["combust"],
+            # What to do and avoid for each condition the graha is in (shown when its row is opened).
+            "guide": guide,
+        })
+    return {
+        "planets": planets,
+        # What the houses are counted from: the lagna, or the Moon sign when the birth time is unknown.
+        "reference": {"basis": "lagna" if ctx.profile.time_known else "moon", "sign": SIGNS[n["ref_sign"]],
+                      "ayanamsa": ayanamsa},
+    }
 
 
 # --- Day timeline ---------------------------------------------------------------------

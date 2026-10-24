@@ -44,6 +44,64 @@ def seed_for(user, profile) -> None:
                                          defaults={"reminder": SEED_REMINDERS[kind]})
 
 
+CHART_KIND = "mantra"  # chart remedies are each graha's beej mantra
+
+
+def chart_reasons(profile, at=None) -> dict[str, list[str]]:
+    """Graha -> reasons it gets a remedy whatever the goals: the lagna lord (when the birth time is
+    known), Chandra, and the current Mahadasha and Antardasha lords. Order is kept for badges."""
+    if profile is None:
+        return {}
+    md, ad = vedic._vimshottari(profile).current(at or dj_tz.now(), levels=2)[:2]
+    pairs = []
+    lords = house_lords(profile)
+    if lords:
+        pairs.append(("lagna", lords[1]))
+    pairs += [("moon", "Mo"), ("mahadasha", md.lord), ("antardasha", ad.lord)]
+    out: dict[str, list[str]] = {}
+    for reason, planet in pairs:
+        out.setdefault(planet, []).append(reason)
+    return out
+
+
+@transaction.atomic
+def sync_chart(user, profile, at=None) -> None:
+    """Keep the chart remedies (see `chart_reasons`) on the list as the dasha moves on.
+
+    A reason that no longer holds is dropped; a suggested remedy left with no reason and no goal is
+    archived (its history stays on the heatmap). A remedy the user removed while a reason held is
+    not added back for that reason."""
+    if profile is None:
+        return
+    want = chart_reasons(profile, at)
+    now = dj_tz.now()
+    rows = list(active(user).exclude(kind=UserRemedy.Kind.CUSTOM))
+    for r in rows:
+        if not r.basis:
+            continue
+        keep = [b for b in r.basis if r.kind == CHART_KIND and b in want.get(r.planet, [])]
+        if keep != r.basis:
+            r.basis = keep
+            if not keep and not r.goal and not r.user_added:
+                r.archived_at = now
+            r.save(update_fields=["basis", "archived_at"])
+    current = {r.planet: r for r in rows if r.kind == CHART_KIND and r.archived_at is None}
+    dismissed = {(r.planet, b) for r in UserRemedy.objects.filter(user=user, kind=CHART_KIND, archived_at__isnull=False)
+                 for b in r.basis}
+    for planet, reasons in want.items():
+        r = current.get(planet)
+        if r is not None:
+            missing = [b for b in reasons if b not in r.basis]
+            if missing:
+                r.basis = r.basis + missing
+                r.save(update_fields=["basis"])
+            continue
+        reasons = [b for b in reasons if (planet, b) not in dismissed]
+        if reasons:
+            UserRemedy.objects.create(user=user, planet=planet, kind=CHART_KIND, basis=reasons,
+                                      reminder=SEED_REMINDERS[CHART_KIND])
+
+
 def house_lords(profile) -> dict[int, str] | None:
     """Bhava -> lord, only when the birth time (and so the lagna) is known."""
     if profile is None or not profile.time_known:
@@ -75,7 +133,8 @@ def set_goals(user, profile, goals: list[str]) -> None:
                .annotate(n_logs=Count("logs"))}
     now = dj_tz.now()
     for key, r in current.items():
-        if r.goal and r.goal not in goals and key not in wanted_keys and not r.edited and not r.n_logs:
+        if (r.goal and r.goal not in goals and key not in wanted_keys and not r.basis
+                and not r.edited and not r.n_logs):
             r.archived_at = now
             r.save(update_fields=["archived_at"])
     for planet, kind, g in wanted:
@@ -92,7 +151,11 @@ def set_goals(user, profile, goals: list[str]) -> None:
 def add_for_planet(user, planet: str, kinds=("mantra", "charity")) -> list[UserRemedy]:
     out = []
     for kind in kinds:
-        obj, _ = UserRemedy.objects.get_or_create(user=user, planet=planet, kind=kind, archived_at=None)
+        obj, created = UserRemedy.objects.get_or_create(user=user, planet=planet, kind=kind, archived_at=None,
+                                                        defaults={"user_added": True})
+        if not created and not obj.user_added:
+            obj.user_added = True  # the user asked for it, so it stays when its chart reason ends
+            obj.save(update_fields=["user_added"])
         out.append(obj)
     return out
 
@@ -193,7 +256,10 @@ def serialize(remedy: UserRemedy, today: date, lang: str) -> dict:
         "planet_name": short(remedy.planet, lang) if remedy.planet else "", "kind": remedy.kind,
         "kind_label": ("अपना" if lang == "hi" else "Your own") if custom else rc.KIND_LABEL[lang][remedy.kind],
         "glyph": "✦" if custom else rc.KIND_GLYPH[remedy.kind],
-        "goal": remedy.goal, "goal_label": gc.label(remedy.goal, lang), "goal_short": gc.short_label(remedy.goal, lang),
+        "goal": remedy.goal, "goal_label": gc.label(remedy.goal, lang),
+        # Badge: the goal it serves, else why the chart calls for it ("Mahadasha", "Lagna"…).
+        "goal_short": gc.short_label(remedy.goal, lang) or rc.basis_short(remedy.basis, lang),
+        "basis": remedy.basis, "basis_label": rc.basis_label(remedy.basis, lang),
         "reminder": remedy.reminder, "due_today": is_due(remedy, today, info),
         "edited": remedy.edited,
         "overrides": {f: getattr(remedy, f) for f in UserRemedy.OVERRIDES},

@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&family=Hanken+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E4E1D9;font-family:"Hanken Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:var(--acc,#B0722F);text-decoration:none}
+  a:hover{color:var(--acc-d,#8a5a22)}
+  ::-webkit-scrollbar{width:0;height:0}
+  .scr{-ms-overflow-style:none;scrollbar-width:none}
+  @keyframes anfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes ansheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  @keyframes anscrim{from{opacity:0}to{opacity:1}}
+  @keyframes anexp{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  @keyframes anbreath{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.9;transform:scale(1.04)}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;align-items:flex-start;gap:36px;padding:34px 40px 60px">
+
+  <!-- ===== CONTROL RAIL ===== -->
+  <div style="width:250px;flex:none;position:sticky;top:34px;display:flex;flex-direction:column;gap:18px">
+    <div>
+      <div style="font-family:'Newsreader',serif;font-size:27px;font-weight:500;color:#26221C;letter-spacing:-.3px">Antara</div>
+      <div style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9488;margin-top:2px">Vedic daily companion</div>
+    </div>
+
+    <div style="display:flex;gap:6px">
+      <div data-field="platform" data-val="ios" onClick="{{ set }}" style="{{ ui.platIos }}">iPhone</div>
+      <div data-field="platform" data-val="android" onClick="{{ set }}" style="{{ ui.platAnd }}">Android</div>
+      <div data-field="theme" data-val="{{ ui.themeNext }}" onClick="{{ set }}" style="flex:none;width:40px;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid rgba(38,34,28,.14);cursor:pointer;font-size:15px;background:#fff" title="Toggle theme">{{ ui.themeIcon }}</div>
+    </div>
+
+    <div>
+      <div style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;margin-bottom:9px">Accent — pick one</div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <sc-for list="{{ accents }}" as="a" hint-placeholder-count="6">
+          <div data-field="accent" data-val="{{ a.k }}" onClick="{{ set }}" title="{{ a.label }}" style="{{ a.dotStyle }}"></div>
+        </sc-for>
+      </div>
+      <div style="font-size:11px;color:#8b8578;margin-top:9px">{{ ui.accentLabel }}</div>
+    </div>
+
+    <div>
+      <div style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;margin-bottom:9px">Background — pick one</div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <sc-for list="{{ bases }}" as="b" hint-placeholder-count="5">
+          <div data-field="base" data-val="{{ b.k }}" onClick="{{ set }}" title="{{ b.label }}" style="{{ b.dotStyle }}"></div>
+        </sc-for>
+      </div>
+      <div style="font-size:11px;color:#8b8578;margin-top:9px">{{ ui.baseLabel }}</div>
+    </div>
+
+    <div style="background:#fff;border:1px solid rgba(38,34,28,.08);border-radius:14px;padding:8px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+      <div style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;padding:6px 8px 4px">Phase 1 · core</div>
+      <sc-for list="{{ navP1 }}" as="s" hint-placeholder-count="4">
+        <div data-field="screen" data-val="{{ s.k }}" onClick="{{ set }}" style="{{ s.rowStyle }}"><span style="opacity:.55;font-family:'Spline Sans Mono',monospace;font-size:10px;width:16px">{{ s.n }}</span>{{ s.label }}</div>
+      </sc-for>
+      <div style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;padding:10px 8px 4px">Phase 2 · extend</div>
+      <sc-for list="{{ navP2 }}" as="s" hint-placeholder-count="8">
+        <div data-field="screen" data-val="{{ s.k }}" onClick="{{ set }}" style="{{ s.rowStyle }}"><span style="opacity:.55;font-family:'Spline Sans Mono',monospace;font-size:10px;width:16px">{{ s.n }}</span>{{ s.label }}</div>
+      </sc-for>
+    </div>
+
+    <div style="font-size:11.5px;line-height:1.55;color:#8b8578;padding:0 4px">
+      <div style="font-weight:600;color:#6e685d;margin-bottom:4px">Timing legend</div>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="width:9px;height:9px;border-radius:3px;background:#5E8A6B"></span>Auspicious — favourable to begin</div>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="width:9px;height:9px;border-radius:3px;background:#B08A3A"></span>Neutral — proceed mindfully</div>
+      <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:3px;background:#B05A44"></span>Inauspicious — better to wait</div>
+    </div>
+  </div>
+
+  <!-- ===== PHONE STAGE ===== -->
+  <div data-theme="{{ sel.theme }}" data-accent="{{ sel.accent }}" data-base="{{ sel.base }}" style="flex:none;position:relative;width:414px;height:868px;border-radius:{{ ui.bezelR }};background:#0c0b10;padding:12px;box-shadow:0 50px 90px -30px rgba(20,16,30,.5),0 0 0 1px rgba(0,0,0,.2)">
+    <div data-bg="bg" data-screen-label="{{ sel.screen }}" style="position:absolute;inset:12px;border-radius:{{ ui.screenR }};overflow:hidden;background:#F1ECE2;display:flex;flex-direction:column">
+
+      <!-- status bar -->
+      <div style="flex:none;height:{{ ui.statusH }};display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 6px;position:relative;z-index:30">
+        <span data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C;font-variant-numeric:tabular-nums">{{ ui.clock }}</span>
+        <sc-if value="{{ ui.isIos }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;top:16px;left:50%;transform:translateX(-50%);width:118px;height:33px;background:#0c0b10;border-radius:20px"></div>
+        </sc-if>
+        <div data-fg="ink" style="display:flex;align-items:center;gap:6px;color:#26221C">
+          <svg width="18" height="11" viewBox="0 0 18 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx=".6"/><rect x="4.5" y="4.5" width="3" height="6.5" rx=".6"/><rect x="9" y="2.2" width="3" height="8.8" rx=".6"/><rect x="13.5" y="0" width="3" height="11" rx=".6"/></svg>
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 2.6c2.1 0 4 .8 5.4 2.2l1-1C13.7 2.1 11 1 8 1S2.3 2.1.6 3.8l1 1C3 3.4 5 2.6 8 2.6z"/><path d="M8 6c1.2 0 2.3.5 3.1 1.3l1-1C11 5.1 9.6 4.5 8 4.5s-3 .6-4.1 1.8l1 1C5.7 6.5 6.8 6 8 6z"/><circle cx="8" cy="9.3" r="1.4"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="currentColor" stroke-opacity=".4" fill="none"/><rect x="2" y="2" width="16" height="8" rx="1.6" fill="currentColor"/><rect x="23" y="4" width="1.6" height="4" rx=".8" fill="currentColor" fill-opacity=".4"/></svg>
+        </div>
+      </div>
+
+      <!-- scroll body -->
+      <div class="scr" style="flex:1;overflow-y:auto;overflow-x:hidden;position:relative">
+
+        <!-- ============ LOGIN ============ -->
+        <sc-if value="{{ show.login }}" hint-placeholder-val="{{ true }}">
+          <div style="min-height:100%;display:flex;flex-direction:column;padding:22px 26px 34px;animation:anfade .5s ease">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:44px 0 30px">
+              <div style="position:relative;width:64px;height:64px;display:flex;align-items:center;justify-content:center">
+                <span style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--acc,#B0722F) 45%,#fff),var(--acc,#B0722F));animation:anbreath 5s ease-in-out infinite"></span>
+                <span style="position:relative;font-size:26px;color:#fff">☽</span>
+              </div>
+              <div style="text-align:center">
+                <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:27px;font-weight:500;color:#26221C;letter-spacing:-.3px">{{ login.title }}</div>
+                <div data-fg="ink2" style="font-size:13.5px;color:#6e685d;margin-top:5px;line-height:1.5;max-width:260px">{{ login.sub }}</div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div>
+                <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;display:block;margin-bottom:6px">Email</label>
+                <input data-bg="surf" data-bd="hair" data-fg="ink" type="email" placeholder="you@example.com" value="{{ login.email }}" onChange="{{ onEmail }}" style="{{ login.emailStyle }}" />
+                <sc-if value="{{ login.emailErr }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11.5px;color:#B05A44;margin-top:6px">Enter a valid email address</div>
+                </sc-if>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+                  <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d">Password</label>
+                  <sc-if value="{{ login.isSignIn }}" hint-placeholder-val="{{ true }}">
+                    <span data-fg="accent" style="font-size:11.5px;font-weight:600;color:var(--acc,#B0722F);cursor:pointer">Forgot?</span>
+                  </sc-if>
+                </div>
+                <div style="position:relative">
+                  <input data-bg="surf" data-bd="hair" data-fg="ink" type="{{ login.pwType }}" placeholder="{{ login.pwPlaceholder }}" value="{{ login.pw }}" onChange="{{ onPw }}" style="{{ login.pwStyle }}" />
+                  <span data-field="loginShowPw" onClick="{{ toggle }}" data-fg="ink3" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:600;color:#a59e90;cursor:pointer">{{ login.pwToggle }}</span>
+                </div>
+                <sc-if value="{{ login.pwErr }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11.5px;color:#B05A44;margin-top:6px">Password must be at least 8 characters</div>
+                </sc-if>
+              </div>
+            </div>
+
+            <div data-bg="accent" data-fg="onAccent" onClick="{{ submitLogin }}" style="{{ login.btnStyle }}">{{ login.btn }}</div>
+
+            <div style="display:flex;align-items:center;gap:12px;margin:22px 0 4px">
+              <span data-bd="hair" style="flex:1;border-top:1px solid rgba(38,34,28,.1)"></span>
+              <span data-fg="ink3" style="font-size:11px;color:#a59e90">{{ login.switchQ }}</span>
+              <span data-bd="hair" style="flex:1;border-top:1px solid rgba(38,34,28,.1)"></span>
+            </div>
+            <div data-bd="hair2" data-fg="ink" data-field="screen" data-val="onboarding" onClick="{{ set }}" style="text-align:center;padding:14px;border-radius:14px;border:1px solid rgba(38,34,28,.16);font-size:14.5px;font-weight:600;color:#26221C;cursor:pointer;margin-top:10px">{{ login.switchBtn }}</div>
+
+            <div style="flex:1"></div>
+            <div data-fg="ink3" style="text-align:center;font-size:11px;color:#a59e90;margin-top:24px;line-height:1.5">By continuing you agree to the Terms & Privacy Policy.<br/>Your birth details stay private to you.</div>
+          </div>
+        </sc-if>
+
+        <!-- ============ ONBOARDING ============ -->
+        <sc-if value="{{ show.onboarding }}" hint-placeholder-val="{{ false }}">
+          <div style="min-height:100%;display:flex;flex-direction:column;padding:22px 26px 34px;animation:anfade .5s ease">
+            <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:16px;padding:26px 0 22px">
+              <div style="position:relative;width:64px;height:64px;display:flex;align-items:center;justify-content:center">
+                <span style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 45%,#fff),var(--acc,var(--acc,#B0722F)));animation:anbreath 5s ease-in-out infinite"></span>
+                <span style="position:relative;font-size:26px;color:#fff">☽</span>
+              </div>
+              <div style="text-align:center">
+                <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:26px;font-weight:500;color:#26221C;letter-spacing:-.3px">Create your account</div>
+                <div data-fg="ink2" style="font-size:13.5px;color:#6e685d;margin-top:5px;line-height:1.5;max-width:250px">Your chart is cast once, from the moment you were born. Everything Antara shows flows from it.</div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;margin-top:6px">
+              <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90">Account</div>
+              <div>
+                <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;display:block;margin-bottom:6px">Email</label>
+                <input data-bg="surf" data-bd="hair" data-fg="ink" type="email" placeholder="you@example.com" value="{{ login.email }}" onChange="{{ onEmail }}" style="{{ login.emailStyle }}" />
+                <sc-if value="{{ login.emailErr }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11.5px;color:#B05A44;margin-top:6px">Enter a valid email address</div>
+                </sc-if>
+              </div>
+              <div>
+                <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;display:block;margin-bottom:6px">Password</label>
+                <div style="position:relative">
+                  <input data-bg="surf" data-bd="hair" data-fg="ink" type="{{ login.pwType }}" placeholder="At least 8 characters" value="{{ login.pw }}" onChange="{{ onPw }}" style="{{ login.pwStyle }}" />
+                  <span data-field="loginShowPw" onClick="{{ toggle }}" data-fg="ink3" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:600;color:#a59e90;cursor:pointer">{{ login.pwToggle }}</span>
+                </div>
+                <sc-if value="{{ login.pwErr }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11.5px;color:#B05A44;margin-top:6px">Password must be at least 8 characters</div>
+                </sc-if>
+              </div>
+              <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;margin-top:8px">Birth details</div>
+              <div>
+                <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;display:block;margin-bottom:6px">Name</label>
+                <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.12);border-radius:13px;padding:14px 15px;font-size:15px;color:#26221C" data-fg="ink">Ananya Rao</div>
+              </div>
+              <div style="display:flex;gap:11px">
+                <div style="flex:1.2">
+                  <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;display:block;margin-bottom:6px">Date of birth</label>
+                  <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.12);border-radius:13px;padding:14px 15px;font-size:15px;color:#26221C" data-fg="ink">14 Aug 1994</div>
+                </div>
+                <div style="flex:1">
+                  <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;display:block;margin-bottom:6px">Time</label>
+                  <div data-bg="surf" data-bd="hair" style="{{ ob.timeStyle }}" data-fg="ink">{{ ob.timeText }}</div>
+                </div>
+              </div>
+              <div data-field="timeUnknown" onClick="{{ toggle }}" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:-3px">
+                <span style="{{ ob.checkStyle }}">{{ ob.checkMark }}</span>
+                <span data-fg="ink2" style="font-size:12.5px;color:#6e685d">I don't know my exact birth time <span data-fg="ink3" style="color:#a59e90">— we'll use solar-sign methods</span></span>
+              </div>
+              <div>
+                <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;display:block;margin-bottom:6px">Place of birth</label>
+                <div style="position:relative">
+                  <div data-bg="surf" data-bd="hair" style="{{ ob.birth.boxStyle }}">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="flex:none"><path d="M8 1.5c2.8 0 5 2.2 5 5 0 3.5-5 8-5 8s-5-4.5-5-8c0-2.8 2.2-5 5-5z" stroke="currentColor" style="color:var(--acc,#B0722F)" stroke-width="1.4"/><circle cx="8" cy="6.5" r="1.8" stroke="currentColor" style="color:var(--acc,#B0722F)" stroke-width="1.4"/></svg>
+                    <input data-fg="ink" data-which="birth" placeholder="Search a city" value="{{ ob.birth.value }}" onFocus="{{ locFocus }}" onChange="{{ locInput }}" onBlur="{{ locBlur }}" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#26221C;padding:0" />
+                    <span data-fg="ink3" style="font-size:11px;color:#a59e90;white-space:nowrap">{{ ob.birth.region }}</span>
+                  </div>
+                  <sc-if value="{{ ob.birth.open }}" hint-placeholder-val="{{ false }}">
+                    <div data-bg="surf" data-bd="hair" data-shadow style="position:absolute;top:calc(100% + 6px);left:0;right:0;max-height:212px;overflow-y:auto;background:#fff;border:1px solid rgba(38,34,28,.1);border-radius:13px;box-shadow:0 12px 30px -8px rgba(20,16,30,.22);z-index:20;animation:anexp .2s ease">
+                      <sc-for list="{{ ob.birth.options }}" as="p" hint-placeholder-count="4">
+                        <div data-bd="hair" data-which="birth" data-val="{{ p.id }}" onMouseDown="{{ locPick }}" style="{{ p.style }}"><span data-fg="ink" style="font-size:14px;color:#26221C">{{ p.city }}</span><span data-fg="ink3" style="font-size:12px;color:#a59e90">{{ p.region }}</span></div>
+                      </sc-for>
+                      <sc-if value="{{ ob.birth.empty }}" hint-placeholder-val="{{ false }}">
+                        <div data-fg="ink3" style="padding:13px;font-size:12.5px;color:#a59e90;line-height:1.45">No supported location matches “{{ ob.birth.q }}”. Pick the nearest city from the list.</div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ ob.birth.hintOn }}" hint-placeholder-val="{{ false }}">
+                  <div data-fg="ink3" style="font-size:11px;color:#a59e90;margin-top:6px">{{ ob.birth.hint }}</div>
+                </sc-if>
+              </div>
+              <div>
+                <label data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;display:block;margin-bottom:6px">Where you live now <span data-fg="ink3" style="font-weight:400;color:#a59e90">— sets your daily timings</span></label>
+                <div style="position:relative">
+                  <div data-bg="surf" data-bd="hair" style="{{ ob.cur.boxStyle }}">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style="flex:none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" style="color:var(--acc,#B0722F)" stroke-width="1.4"/><circle cx="8" cy="8" r="1.8" fill="currentColor" style="color:var(--acc,#B0722F)"/></svg>
+                    <input data-fg="ink" data-which="cur" placeholder="Search a city" value="{{ ob.cur.value }}" onFocus="{{ locFocus }}" onChange="{{ locInput }}" onBlur="{{ locBlur }}" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#26221C;padding:0" />
+                    <span data-fg="ink3" style="font-size:11px;color:#a59e90;white-space:nowrap">{{ ob.cur.region }}</span>
+                  </div>
+                  <sc-if value="{{ ob.cur.open }}" hint-placeholder-val="{{ false }}">
+                    <div data-bg="surf" data-bd="hair" data-shadow style="position:absolute;top:calc(100% + 6px);left:0;right:0;max-height:212px;overflow-y:auto;background:#fff;border:1px solid rgba(38,34,28,.1);border-radius:13px;box-shadow:0 12px 30px -8px rgba(20,16,30,.22);z-index:20;animation:anexp .2s ease">
+                      <sc-for list="{{ ob.cur.options }}" as="p" hint-placeholder-count="4">
+                        <div data-bd="hair" data-which="cur" data-val="{{ p.id }}" onMouseDown="{{ locPick }}" style="{{ p.style }}"><span data-fg="ink" style="font-size:14px;color:#26221C">{{ p.city }}</span><span data-fg="ink3" style="font-size:12px;color:#a59e90">{{ p.region }}</span></div>
+                      </sc-for>
+                      <sc-if value="{{ ob.cur.empty }}" hint-placeholder-val="{{ false }}">
+                        <div data-fg="ink3" style="padding:13px;font-size:12.5px;color:#a59e90;line-height:1.45">No supported location matches “{{ ob.cur.q }}”. Pick the nearest city from the list.</div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ ob.cur.hintOn }}" hint-placeholder-val="{{ false }}">
+                  <div data-fg="ink3" style="font-size:11px;color:#a59e90;margin-top:6px">{{ ob.cur.hint }}</div>
+                </sc-if>
+              </div>
+            </div>
+
+            <div data-bg="accentSoft" style="background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 15%,transparent);border-radius:13px;padding:12px 14px;margin-top:24px;display:flex;gap:10px;align-items:flex-start">
+              <span data-fg="accent" style="color:var(--acc,#B0722F);font-size:14px;margin-top:1px">◈</span>
+              <span data-fg="ink2" style="font-size:11.5px;line-height:1.5;color:#6e685d">Antara offers <b style="font-weight:600">guidance for reflection</b>, not fixed prediction. You always hold the choice.</span>
+            </div>
+            <div data-bg="accent" data-fg="onAccent" onClick="{{ submitSignup }}" style="background:var(--acc,#B0722F);color:#FFF8EE;text-align:center;padding:16px;border-radius:14px;font-size:15.5px;font-weight:600;margin-top:12px;cursor:pointer;box-shadow:0 8px 20px -8px color-mix(in srgb,var(--acc,#B0722F) 60%,transparent)">Create account & cast my chart</div>
+            <div style="text-align:center;margin-top:16px"><span data-fg="ink2" style="font-size:13px;color:#6e685d">Already have an account? </span><span data-fg="accent" data-field="screen" data-val="login" onClick="{{ set }}" style="font-size:13px;font-weight:600;color:var(--acc,#B0722F);cursor:pointer">Sign in</span></div>
+          </div>
+        </sc-if>
+
+        <!-- ============ HOME ============ -->
+        <sc-if value="{{ show.home }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 2px 14px">
+              <div>
+                <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#a59e90;display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span>{{ home.dateLine }}</span><span style="display:flex;align-items:center;gap:4px;color:var(--acc,#B0722F)"><svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5c2.8 0 5 2.2 5 5 0 3.5-5 8-5 8s-5-4.5-5-8c0-2.8 2.2-5 5-5z" stroke="currentColor" stroke-width="1.8"/></svg>{{ home.location }}</span></div>
+                <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:25px;font-weight:500;color:#26221C;margin-top:3px;letter-spacing:-.3px">{{ home.greeting }}, Ananya</div>
+              </div>
+              <div data-bg="surf" data-bd="hair" data-field="screen" data-val="profiles" onClick="{{ set }}" style="width:40px;height:40px;border-radius:50%;background:#EDE4D3;border:1px solid rgba(38,34,28,.08);display:flex;align-items:center;justify-content:center;font-weight:600;color:#8a6a2f;font-size:14px;cursor:pointer">AR</div>
+            </div>
+
+            <!-- hero insight card -->
+            <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:22px;padding:20px 20px 18px;box-shadow:0 18px 40px -22px rgba(20,16,30,.22)" data-shadow>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:13px">
+                <span style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 45%,#fff),var(--acc,var(--acc,#B0722F)));display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff">☉</span>
+                <span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#a59e90">Today's insight</span>
+              </div>
+              <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:22px;line-height:1.32;color:#26221C;letter-spacing:-.2px;text-wrap:pretty">A steady day for finishing, not starting. Return to a conversation you left half-spoken.</div>
+              <div data-bd="hair" data-field="whyOpen" onClick="{{ toggle }}" style="margin-top:15px;border-top:1px solid rgba(38,34,28,.09);padding-top:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+                <span data-fg="accent" style="font-size:12.5px;font-weight:600;color:var(--acc,#B0722F);display:flex;align-items:center;gap:6px"><span style="font-size:13px">◈</span>Why this?</span>
+                <span data-fg="ink3" style="color:#a59e90;font-size:11px;transition:transform .2s;transform:{{ home.whyRot }}">▾</span>
+              </div>
+              <sc-if value="{{ home.whyOpen }}" hint-placeholder-val="{{ false }}">
+                <div data-bg="accentSoft" style="background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 11%,transparent);border-radius:13px;padding:13px 14px;margin-top:11px;animation:anexp .25s ease">
+                  <div data-fg="ink2" style="font-size:12.5px;line-height:1.6;color:#6e685d">Moon transits your <b style="color:#26221C">4th house</b> today while <b style="color:#26221C">Mercury (Budha)</b>, your Dasha lord, sits retrograde. The pairing favours revisiting and completing over launching anew.</div>
+                  <div style="display:flex;gap:7px;margin-top:11px;flex-wrap:wrap">
+                    <span data-bd="hair2" style="font-size:11px;padding:5px 9px;border-radius:20px;border:1px solid rgba(38,34,28,.14);color:#6e685d;display:flex;align-items:center;gap:5px" data-fg="ink2">☽ Moon · 4th</span>
+                    <span data-bd="hair2" style="font-size:11px;padding:5px 9px;border-radius:20px;border:1px solid rgba(38,34,28,.14);color:#6e685d;display:flex;align-items:center;gap:5px" data-fg="ink2">☿ Budha ℞ Dasha</span>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+
+            <!-- dasha + transit row -->
+            <div style="display:flex;gap:12px;margin-top:14px">
+              <div data-bg="surf" data-bd="hair" data-field="screen" data-val="dasha" onClick="{{ set }}" style="flex:1;background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;padding:15px;cursor:pointer">
+                <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90">Current period</div>
+                <div style="display:flex;align-items:center;gap:7px;margin-top:8px"><span style="width:20px;height:20px;border-radius:50%;background:#EAF0EA;display:flex;align-items:center;justify-content:center;font-size:11px;color:#5E8A6B">☿</span><span data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">Budha–Shukra</span></div>
+                <div data-fg="ink2" style="font-size:11px;color:#6e685d;margin-top:6px">Mercury–Venus · Dasha</div>
+                <div style="height:4px;border-radius:3px;background:#EDE7DC;margin-top:9px;overflow:hidden"><span style="display:block;height:100%;width:62%;background:var(--acc,#B0722F);border-radius:3px"></span></div>
+                <div data-fg="ink3" style="font-size:10px;color:#a59e90;margin-top:5px">1y 4m remaining</div>
+              </div>
+              <div data-bg="surf" data-bd="hair" data-field="screen" data-val="chart" onClick="{{ set }}" style="flex:1;background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;padding:15px;cursor:pointer">
+                <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90">Live transit</div>
+                <div style="display:flex;align-items:center;gap:7px;margin-top:8px"><span style="width:20px;height:20px;border-radius:50%;background:#F3E3DC;display:flex;align-items:center;justify-content:center;font-size:11px;color:#B05A44">♂</span><span data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">Mars enters 10th</span></div>
+                <div data-fg="ink2" style="font-size:11px;color:#6e685d;margin-top:6px">Drive at work sharpens</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:11px"><span style="width:7px;height:7px;border-radius:50%;background:#B05A44"></span><span data-fg="ink3" style="font-size:10px;color:#a59e90">Peaks around 3 PM</span></div>
+              </div>
+            </div>
+
+            <!-- today's timing summary -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 2px 11px">
+              <div data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">Today's windows</div>
+              <span data-fg="accent" data-field="screen" data-val="timeline" onClick="{{ set }}" style="font-size:12px;font-weight:600;color:var(--acc,#B0722F);cursor:pointer">Full timeline →</span>
+            </div>
+            <sc-for list="{{ home.windows }}" as="w" hint-placeholder-count="3">
+              <div style="{{ w.rowStyle }}">
+                <span style="{{ w.bar }}"></span>
+                <div style="flex:1">
+                  <div data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C">{{ w.name }} <span data-fg="ink3" style="font-weight:400;color:#a59e90;font-size:11.5px">{{ w.gloss }}</span></div>
+                  <div style="{{ w.tagStyle }}">{{ w.tag }}</div>
+                </div>
+                <span style="font-family:'Spline Sans Mono',monospace;font-size:12px;color:{{ w.timeColor }}">{{ w.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- ============ TIMELINE ============ -->
+        <sc-if value="{{ show.timeline }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 2px 4px">
+              <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C">Day timeline</div>
+              <div data-bg="surf" data-bd="hair" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid rgba(38,34,28,.1);border-radius:11px;padding:7px 11px"><span data-fg="ink2" style="font-size:13px;color:#6e685d">‹</span><span data-fg="ink" style="font-size:12.5px;font-weight:600;color:#26221C">Today</span><span data-fg="ink2" style="font-size:13px;color:#6e685d">›</span></div>
+            </div>
+            <div data-fg="ink2" style="font-size:12px;color:#6e685d;padding:0 2px 16px">Sat, 19 Jul · Bengaluru · Sunrise 6:02 · Sunset 6:47</div>
+            <div style="position:relative;padding-left:6px">
+              <sc-for list="{{ timeline }}" as="b" hint-placeholder-count="6">
+                <div style="display:flex;gap:13px;align-items:stretch;margin-bottom:3px">
+                  <div style="flex:none;width:52px;text-align:right;padding-top:2px"><span style="font-family:'Spline Sans Mono',monospace;font-size:11px;color:{{ b.timeColor }}">{{ b.start }}</span></div>
+                  <div style="flex:none;width:12px;display:flex;flex-direction:column;align-items:center"><span style="width:11px;height:11px;border-radius:50%;background:{{ b.dot }};margin-top:3px;border:2px solid {{ b.dotRing }}"></span><span style="flex:1;width:2px;background:{{ b.line }}"></span></div>
+                  <div style="{{ b.cardStyle }}">
+                    <div style="display:flex;align-items:center;justify-content:space-between">
+                      <span data-fg="ink" style="font-size:14.5px;font-weight:600;color:#26221C">{{ b.name }}</span>
+                      <span style="{{ b.badge }}">{{ b.kindLabel }}</span>
+                    </div>
+                    <div data-fg="ink2" style="font-size:11.5px;color:#6e685d;margin-top:3px;line-height:1.45">{{ b.gloss }}</div>
+                    <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;color:#a59e90;margin-top:6px">{{ b.range }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ DECISION ASSISTANT ============ -->
+        <sc-if value="{{ show.decision }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C;padding:8px 2px 3px">Best time to…</div>
+            <div data-fg="ink2" style="font-size:12.5px;color:#6e685d;padding:0 2px 18px;line-height:1.5">Pick what you're planning. Antara ranks the openings in your window against your chart.</div>
+
+            <div data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;margin-bottom:9px">Activity</div>
+            <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:22px">
+              <sc-for list="{{ da.activities }}" as="a" hint-placeholder-count="5">
+                <div data-field="daActivity" data-val="{{ a.k }}" onClick="{{ set }}" style="{{ a.chipStyle }}"><span style="font-size:15px">{{ a.glyph }}</span>{{ a.label }}</div>
+              </sc-for>
+            </div>
+
+            <div data-fg="ink2" style="font-size:11.5px;font-weight:600;color:#6e685d;margin-bottom:9px">Window</div>
+            <div style="display:flex;gap:9px;margin-bottom:22px">
+              <sc-for list="{{ da.ranges }}" as="r" hint-placeholder-count="3">
+                <div data-field="daRange" data-val="{{ r.k }}" onClick="{{ set }}" style="{{ r.style }}">{{ r.label }}</div>
+              </sc-for>
+            </div>
+
+            <div data-bg="accent" data-fg="onAccent" data-field="daPhase" data-val="results" onClick="{{ set }}" style="background:var(--acc,#B0722F);color:#FFF8EE;text-align:center;padding:15px;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px -8px color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 55%,transparent)">Find my windows</div>
+
+            <sc-if value="{{ da.showResults }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:26px;animation:anfade .4s ease">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                  <div data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">Ranked openings</div>
+                  <span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10px;color:#a59e90">{{ da.resultCaption }}</span>
+                </div>
+                <sc-for list="{{ da.results }}" as="r" hint-placeholder-count="4">
+                  <div style="{{ r.cardStyle }}">
+                    <div style="flex:none;position:relative;width:46px;height:46px">
+                      <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="20" fill="none" stroke="rgba(38,34,28,.09)" stroke-width="4"/><circle cx="23" cy="23" r="20" fill="none" stroke="{{ r.ring }}" stroke-width="4" stroke-linecap="round" stroke-dasharray="{{ r.dash }}" transform="rotate(-90 23 23)"/></svg>
+                      <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:{{ r.ring }}">{{ r.score }}</span>
+                    </div>
+                    <div style="flex:1">
+                      <div style="display:flex;align-items:baseline;gap:8px"><span data-fg="ink" style="font-size:14.5px;font-weight:600;color:#26221C">{{ r.day }}</span><span style="font-family:'Spline Sans Mono',monospace;font-size:12px;color:{{ r.ring }}">{{ r.time }}</span></div>
+                      <div data-fg="ink2" style="font-size:11.5px;color:#6e685d;margin-top:3px;line-height:1.45">{{ r.reason }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ============ BIRTH CHART ============ -->
+        <sc-if value="{{ show.chart }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;padding:8px 2px 3px">
+              <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C">Kundali</div>
+              <span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;letter-spacing:1px;color:#a59e90">{{ chart.title }}</span>
+            </div>
+            <div data-fg="ink2" style="font-size:12px;color:#6e685d;padding:0 2px 14px">{{ chart.sub }}</div>
+
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+              <div data-field="chartStyle" data-val="north" onClick="{{ set }}" style="{{ chart.northSeg }}">North · diamond</div>
+              <div data-field="chartStyle" data-val="south" onClick="{{ set }}" style="{{ chart.southSeg }}">South · grid</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:18px">
+              <div data-field="chartVarga" data-val="d1" onClick="{{ set }}" style="{{ chart.d1Seg }}">Rāśi D1</div>
+              <div data-field="chartVarga" data-val="d9" onClick="{{ set }}" style="{{ chart.d9Seg }}">Navāmśa D9</div>
+            </div>
+
+            <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:20px;padding:18px;box-shadow:0 14px 34px -22px rgba(20,16,30,.2)" data-shadow>
+              <sc-if value="{{ chart.isNorth }}" hint-placeholder-val="{{ true }}">
+                <svg viewBox="0 0 300 300" style="width:100%;display:block">
+                  <rect x="1" y="1" width="298" height="298" fill="none" stroke="rgba(140,120,100,.4)" stroke-width="1.4"/>
+                  <sc-for list="{{ chart.north }}" as="h" hint-placeholder-count="12">
+                    <g>
+                      <polygon points="{{ h.points }}" fill="{{ h.fill }}" stroke="rgba(140,120,100,.4)" stroke-width="1" data-field="sheetHouse" data-val="{{ h.val }}" onClick="{{ set }}" style="cursor:pointer"></polygon>
+                      <text x="{{ h.nx }}" y="{{ h.ny }}" text-anchor="middle" fill="currentColor" data-fg="ink3" style="color:#b3ab9c;font-size:10px;font-family:'Spline Sans Mono',monospace">{{ h.n }}</text>
+                      <text x="{{ h.gx }}" y="{{ h.gy }}" text-anchor="middle" fill="currentColor" data-fg="accent" style="color:var(--acc,#B0722F);font-size:15px;font-weight:600">{{ h.glyphs }}</text>
+                    </g>
+                  </sc-for>
+                </svg>
+              </sc-if>
+              <sc-if value="{{ chart.southIsShown }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);aspect-ratio:1;border:1px solid rgba(140,120,100,.4)">
+                  <sc-for list="{{ chart.south }}" as="c" hint-placeholder-count="16">
+                    <div data-field="sheetHouse" data-val="{{ c.val }}" onClick="{{ c.tap }}" style="{{ c.cellStyle }}">
+                      <sc-if value="{{ c.center }}" hint-placeholder-val="{{ false }}">
+                        <div data-fg="accent" style="font-family:'Newsreader',serif;font-size:22px;color:var(--acc,#B0722F)">{{ c.label }}</div>
+                        <div data-fg="ink3" style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#a59e90">{{ c.sub }}</div>
+                      </sc-if>
+                      <sc-if value="{{ c.isSign }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex;justify-content:space-between;align-items:center"><span data-fg="ink3" style="font-size:8.5px;letter-spacing:.5px;text-transform:uppercase;color:#b3ab9c">{{ c.sign }}</span><span data-fg="accent" style="font-size:8px;font-weight:700;color:var(--acc,#B0722F)">{{ c.ascMark }}</span></div>
+                        <div data-fg="accent" style="flex:1;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--acc,#B0722F)">{{ c.glyphs }}</div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div data-fg="ink3" style="text-align:center;font-size:11px;color:#a59e90;margin-top:12px">Tap any house to read its placement</div>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:16px">
+              <sc-for list="{{ chart.legend }}" as="g" hint-placeholder-count="9">
+                <span data-bg="surf" data-bd="hair" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:20px;background:#fff;border:1px solid rgba(38,34,28,.09);font-size:11px" data-fg="ink2"><span data-fg="accent" style="color:var(--acc,#B0722F);font-size:13px">{{ g.glyph }}</span>{{ g.name }}</span>
+              </sc-for>
+            </div>
+            <div data-bg="surf" data-bd="hair" data-field="screen" data-val="shadbala" onClick="{{ set }}" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:17px;padding:14px 15px;margin-top:16px;cursor:pointer">
+              <span data-bg="accentSoft" data-fg="accent" style="width:40px;height:40px;border-radius:12px;flex:none;background:color-mix(in srgb,var(--acc,#B0722F) 15%,transparent);display:flex;align-items:center;justify-content:center;color:var(--acc,#B0722F);font-size:17px">▥</span>
+              <div style="flex:1"><div data-fg="ink" style="font-size:14.5px;font-weight:600;color:#26221C">Strength · Ṣaḍbala & Bhāvabala</div><div data-fg="ink2" style="font-size:11.5px;color:#6e685d;margin-top:1px">3 grahas and 5 houses need support</div></div>
+              <span data-fg="ink3" style="color:#a59e90;font-size:16px">›</span>
+            </div>
+          </div>
+
+        </sc-if>
+
+        <!-- ============ DASHA TIMELINE ============ -->
+        <sc-if value="{{ show.dasha }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C;padding:8px 2px 2px">Life chapters</div>
+            <div data-fg="ink2" style="font-size:12.5px;color:#6e685d;padding:0 2px 16px;line-height:1.5">Vimśottarī Daśā, five levels deep — from the years-long chapter down to the hours-long breath.</div>
+
+            <div data-bg="surf" data-bd="hair" data-shadow style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:20px;padding:14px 16px 6px;box-shadow:0 14px 34px -22px rgba(20,16,30,.2)">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+                <span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90">You are in · now</span>
+                <span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10px;color:#a59e90">{{ dasha.nowDate }}</span>
+              </div>
+              <sc-for list="{{ dasha.now }}" as="n" hint-placeholder-count="5">
+                <div data-bd="hair" data-field="dPath" data-val="{{ n.val }}" onClick="{{ set }}" style="{{ n.style }}">
+                  <span style="{{ n.dot }}">{{ n.glyph }}</span>
+                  <div style="flex:1;min-width:0">
+                    <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:#a59e90">{{ n.level }}</div>
+                    <div data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C;margin-top:1px">{{ n.name }}</div>
+                  </div>
+                  <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+                    <span data-fg="ink2" style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;color:#6e685d">{{ n.remain }}</span>
+                    <span style="width:54px;height:3px;border-radius:2px;background:rgba(38,34,28,.1);overflow:hidden;display:block"><span style="{{ n.bar }}"></span></span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:20px 0 12px">
+              <sc-for list="{{ dasha.crumbs }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span data-fg="ink3" style="color:#b3ab9c;font-size:11px">{{ c.sep }}</span>
+                  <span data-field="dPath" data-val="{{ c.val }}" onClick="{{ set }}" style="{{ c.style }}">{{ c.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 2px">
+              <div data-fg="ink" style="font-size:16px;font-weight:600;color:#26221C">{{ dasha.levelTitle }}</div>
+              <span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10px;color:#a59e90">{{ dasha.levelSpan }}</span>
+            </div>
+            <div data-fg="ink2" style="font-size:11.5px;color:#6e685d;padding:2px 2px 12px">{{ dasha.levelSub }}</div>
+
+            <div style="position:relative;margin-bottom:16px">
+              <div style="display:flex;gap:2px;height:22px;border-radius:7px;overflow:hidden">
+                <sc-for list="{{ dasha.strip }}" as="x" hint-placeholder-count="9">
+                  <span style="{{ x.style }}">{{ x.glyph }}</span>
+                </sc-for>
+              </div>
+              <sc-if value="{{ dasha.showMarker }}" hint-placeholder-val="{{ true }}">
+                <span data-bg="inv" style="position:absolute;top:-4px;bottom:-4px;width:2px;border-radius:1px;background:#26221C;left:{{ dasha.markerLeft }}"></span>
+              </sc-if>
+            </div>
+
+            <sc-for list="{{ dasha.rows }}" as="r" hint-placeholder-count="9">
+              <div data-bg="{{ r.bgRole }}" data-bd="{{ r.bdRole }}" data-field="dPath" data-val="{{ r.val }}" onClick="{{ r.tap }}" style="{{ r.style }}">
+                <span style="{{ r.dot }}">{{ r.glyph }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span data-fg="ink" style="font-size:14.5px;font-weight:600;color:#26221C">{{ r.name }}</span>
+                    <span style="{{ r.tagStyle }}">{{ r.tag }}</span>
+                  </div>
+                  <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;color:#a59e90;margin-top:3px">{{ r.range }}</div>
+                  <sc-if value="{{ r.isNow }}" hint-placeholder-val="{{ false }}">
+                    <div style="height:3px;border-radius:2px;background:rgba(38,34,28,.1);overflow:hidden;margin-top:7px"><span style="{{ r.bar }}"></span></div>
+                  </sc-if>
+                </div>
+                <div style="flex:none;display:flex;align-items:center;gap:8px">
+                  <span data-fg="ink2" style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;color:#6e685d">{{ r.dur }}</span>
+                  <span data-fg="ink3" style="color:#b3ab9c;font-size:14px">{{ r.chev }}</span>
+                </div>
+              </div>
+            </sc-for>
+            <div data-fg="ink3" style="text-align:center;font-size:11px;color:#a59e90;margin-top:10px">{{ dasha.hint }}</div>
+          </div>
+        </sc-if>
+
+        <!-- ============ STRENGTH · SHADBALA / BHAVABALA ============ -->
+        <sc-if value="{{ show.strength }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div data-field="screen" data-val="chart" onClick="{{ set }}" style="display:flex;align-items:center;gap:6px;padding:8px 2px 10px;cursor:pointer"><span data-fg="ink2" style="font-size:16px;color:#6e685d">‹</span><span data-fg="ink2" style="font-size:13px;color:#6e685d">Kundali</span></div>
+            <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C;padding:0 2px 3px">Strength</div>
+            <div data-fg="ink2" style="font-size:12.5px;color:#6e685d;padding:0 2px 16px;line-height:1.5">How fully each graha and house can deliver its results — measured in rūpas against the classical minimum.</div>
+            <div style="display:flex;gap:8px;margin-bottom:18px">
+              <div data-field="screen" data-val="shadbala" onClick="{{ set }}" style="{{ str.shadSeg }}">Ṣaḍbala · planets</div>
+              <div data-field="screen" data-val="bhavabala" onClick="{{ set }}" style="{{ str.bhavaSeg }}">Bhāvabala · houses</div>
+            </div>
+
+            <sc-if value="{{ str.isShad }}" hint-placeholder-val="{{ true }}">
+              <div data-bg="surf" data-bd="hair" data-shadow style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:20px;padding:16px 18px;box-shadow:0 14px 34px -22px rgba(20,16,30,.2);margin-bottom:14px">
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <span data-fg="ink" style="font-family:'Newsreader',serif;font-size:30px;color:#26221C;line-height:1">4<span data-fg="ink3" style="font-size:16px;color:#a59e90"> / 7</span></span>
+                  <span data-fg="ink2" style="font-size:13px;color:#6e685d">grahas at full strength</span>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:13px;flex-wrap:wrap">
+                  <span style="font-size:11.5px;padding:6px 10px;border-radius:20px;background:rgba(94,138,107,.13);color:#4b7458;font-weight:600">Strongest · ♂ Mangala 1.36×</span>
+                  <span style="font-size:11.5px;padding:6px 10px;border-radius:20px;background:rgba(176,90,68,.13);color:#9a4a36;font-weight:600">Weakest · ♄ Shani 0.82×</span>
+                </div>
+                <div data-fg="ink2" style="font-size:12px;color:#6e685d;line-height:1.55;margin-top:12px">Budha — your Mahādaśā lord — is below its minimum, so supporting it pays off across this whole chapter.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;padding:0 2px 10px">
+                <span data-bg="inv" style="width:2px;height:12px;background:#26221C;opacity:.55"></span>
+                <span data-fg="ink3" style="font-size:11px;color:#a59e90">Required minimum · tap a graha for its six sources and what to do</span>
+              </div>
+              <sc-for list="{{ str.planets }}" as="p" hint-placeholder-count="7">
+                <div data-bg="surf" data-bd="{{ p.bdRole }}" style="{{ p.style }}">
+                  <div data-field="strPlanet" data-val="{{ p.k }}" onClick="{{ pick }}" style="cursor:pointer">
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <span style="{{ p.dot }}">{{ p.glyph }}</span>
+                      <div style="flex:1;min-width:0">
+                        <div data-fg="ink" style="font-size:14.5px;font-weight:600;color:#26221C">{{ p.name }}</div>
+                        <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;color:#a59e90;margin-top:2px">{{ p.rupas }}</div>
+                      </div>
+                      <div style="text-align:right">
+                        <div style="font-size:15px;font-weight:700;color:{{ p.color }}">{{ p.ratio }}</div>
+                        <div style="font-size:10px;font-weight:600;color:{{ p.color }}">{{ p.status }}</div>
+                      </div>
+                    </div>
+                    <div style="position:relative;height:6px;border-radius:4px;background:rgba(38,34,28,.08);margin-top:11px">
+                      <span style="{{ p.fill }}"></span>
+                      <span data-bg="inv" style="position:absolute;left:62.5%;top:-3px;bottom:-3px;width:2px;background:#26221C;opacity:.55"></span>
+                    </div>
+                  </div>
+                  <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="animation:anexp .25s ease">
+                      <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;margin:16px 0 8px">Six sources · virūpas</div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px 16px">
+                        <sc-for list="{{ p.comps }}" as="c" hint-placeholder-count="6">
+                          <div>
+                            <div style="display:flex;justify-content:space-between;align-items:baseline"><span data-fg="ink" style="font-size:12px;font-weight:600;color:#26221C">{{ c.name }} <span data-fg="ink3" style="font-weight:400;color:#a59e90;font-size:10.5px">{{ c.gloss }}</span></span><span data-fg="ink2" style="font-family:'Spline Sans Mono',monospace;font-size:10.5px;color:#6e685d">{{ c.v }}</span></div>
+                            <div style="height:3px;border-radius:2px;background:rgba(38,34,28,.08);margin-top:4px;overflow:hidden"><span style="{{ c.bar }}"></span></div>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <div data-bg="accentSoft" style="background:color-mix(in srgb,var(--acc,#B0722F) 10%,transparent);border-radius:14px;padding:13px 14px;margin-top:16px">
+                        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px"><span data-fg="accent" style="color:var(--acc,#B0722F);font-size:13px">◈</span><span data-fg="accent" style="font-size:12px;font-weight:700;color:var(--acc-d,#8a5a22)">What to do</span></div>
+                        <div data-fg="ink2" style="font-size:12.5px;line-height:1.5;color:#5a544a;margin-bottom:6px">{{ p.head }}</div>
+                        <sc-for list="{{ p.advice }}" as="a" hint-placeholder-count="3">
+                          <div style="display:flex;gap:10px;padding:7px 0;align-items:flex-start">
+                            <span style="width:5px;height:5px;border-radius:50%;background:var(--acc,#B0722F);flex:none;margin-top:7px"></span>
+                            <div><div data-fg="ink" style="font-size:12.5px;font-weight:600;color:#26221C">{{ a.t }}</div><div data-fg="ink2" style="font-size:12px;color:#6e685d;line-height:1.45;margin-top:1px">{{ a.d }}</div></div>
+                          </div>
+                        </sc-for>
+                        <sc-if value="{{ p.weak }}" hint-placeholder-val="{{ false }}">
+                          <div data-bg="accent" data-fg="onAccent" data-field="screen" data-val="remedies" onClick="{{ set }}" style="background:var(--acc,#B0722F);color:#FFF8EE;text-align:center;padding:11px;border-radius:11px;font-size:13px;font-weight:600;margin-top:8px;cursor:pointer">Add to my remedies</div>
+                        </sc-if>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </sc-if>
+
+            <sc-if value="{{ str.isBhava }}" hint-placeholder-val="{{ false }}">
+              <div data-bg="surf" data-bd="hair" data-shadow style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:20px;padding:16px 14px 12px;box-shadow:0 14px 34px -22px rgba(20,16,30,.2)">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 12px">
+                  <span data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C">House strength</span>
+                  <span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10px;color:#a59e90">rūpas · min 7.0</span>
+                </div>
+                <div style="position:relative;height:130px;display:flex;align-items:flex-end;gap:5px">
+                  <span data-bd="hair2" style="position:absolute;left:0;right:0;bottom:91px;border-top:1.5px dashed rgba(38,34,28,.28)"></span>
+                  <sc-for list="{{ str.houses }}" as="h" hint-placeholder-count="12">
+                    <div data-field="strHouse" data-val="{{ h.val }}" onClick="{{ set }}" style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;cursor:pointer;gap:4px">
+                      <span style="font-size:9.5px;font-weight:700;color:{{ h.color }};opacity:{{ h.labelOp }}">{{ h.v }}</span>
+                      <span style="{{ h.bar }}"></span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:5px;margin-top:6px">
+                  <sc-for list="{{ str.houses }}" as="h" hint-placeholder-count="12">
+                    <span style="{{ h.numStyle }}">{{ h.n }}</span>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:20px;padding:16px 18px;margin-top:14px;animation:anexp .25s ease">
+                <div style="display:flex;align-items:center;gap:13px">
+                  <div data-bg="accentSoft" data-fg="accent" style="width:46px;height:46px;border-radius:14px;background:color-mix(in srgb,var(--acc,#B0722F) 15%,transparent);display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:20px;color:var(--acc,#B0722F)">{{ str.house.n }}</div>
+                  <div style="flex:1;min-width:0">
+                    <div data-fg="ink" style="font-size:16px;font-weight:600;color:#26221C">{{ str.house.karaka }} · House {{ str.house.n }}</div>
+                    <div data-fg="ink2" style="font-size:12px;color:#6e685d">{{ str.house.sign }} · {{ str.house.meaning }}</div>
+                  </div>
+                  <div style="text-align:right"><div style="font-size:16px;font-weight:700;color:{{ str.house.color }}">{{ str.house.v }}</div><div style="font-size:10px;font-weight:600;color:{{ str.house.color }}">{{ str.house.status }}</div></div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:14px">
+                  <sc-for list="{{ str.house.comps }}" as="c" hint-placeholder-count="3">
+                    <div data-bg="surf2" style="flex:1;background:rgba(38,34,28,.04);border-radius:11px;padding:9px 10px">
+                      <div data-fg="ink3" style="font-size:10px;color:#a59e90;line-height:1.3">{{ c.name }}</div>
+                      <div data-fg="ink" style="font-family:'Spline Sans Mono',monospace;font-size:13px;font-weight:600;color:#26221C;margin-top:3px">{{ c.v }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div data-bd="hair" data-field="strPlanet" data-val="{{ str.house.lordKey }}" onClick="{{ goPlanet }}" style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 0 2px;border-top:1px solid rgba(38,34,28,.07);cursor:pointer">
+                  <span data-fg="ink2" style="font-size:12px;color:#6e685d;flex:1">House lord · <b style="color:#26221C">{{ str.house.lord }}</b> at {{ str.house.lordRatio }}</span>
+                  <span data-fg="accent" style="font-size:12px;font-weight:600;color:var(--acc,#B0722F)">Ṣaḍbala →</span>
+                </div>
+                <div data-bg="accentSoft" style="background:color-mix(in srgb,var(--acc,#B0722F) 10%,transparent);border-radius:14px;padding:13px 14px;margin-top:12px">
+                  <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><span data-fg="accent" style="color:var(--acc,#B0722F);font-size:13px">◈</span><span data-fg="accent" style="font-size:12px;font-weight:700;color:var(--acc-d,#8a5a22)">What to do</span></div>
+                  <sc-for list="{{ str.house.advice }}" as="a" hint-placeholder-count="3">
+                    <div style="display:flex;gap:10px;padding:6px 0;align-items:flex-start">
+                      <span style="width:5px;height:5px;border-radius:50%;background:var(--acc,#B0722F);flex:none;margin-top:7px"></span>
+                      <span data-fg="ink2" style="font-size:12.5px;color:#5a544a;line-height:1.5">{{ a }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ============ PANCHANG ============ -->
+        <sc-if value="{{ show.panchang }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 2px 16px">
+              <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C">Panchāng</div>
+              <div data-bg="surf" data-bd="hair" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid rgba(38,34,28,.1);border-radius:11px;padding:7px 12px"><span data-fg="ink2" style="color:#6e685d">‹</span><span data-fg="ink" style="font-size:12.5px;font-weight:600;color:#26221C">Sat 19 Jul</span><span data-fg="ink2" style="color:#6e685d">›</span></div>
+            </div>
+            <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:20px;overflow:hidden;box-shadow:0 14px 34px -22px rgba(20,16,30,.18)" data-shadow>
+              <div data-bg="accentSoft" style="background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 15%,transparent);padding:15px 18px;display:flex;justify-content:space-between;align-items:center">
+                <div><div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:#a08a5f">Bengaluru · 12.97°N</div><div data-fg="ink" style="font-family:'Newsreader',serif;font-size:19px;color:#26221C;margin-top:2px">Śaka 1947 · Śrāvaṇa</div></div>
+                <div style="text-align:right;font-size:11px;line-height:1.7;color:#6e685d" data-fg="ink2"><div>☀ 6:02 → 6:47</div><div>☽ rises 9:14 PM</div></div>
+              </div>
+              <sc-for list="{{ panchang }}" as="p" hint-placeholder-count="5">
+                <div data-bd="hair" style="display:flex;align-items:center;gap:13px;padding:15px 18px;border-top:1px solid rgba(38,34,28,.06)">
+                  <span style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ p.dot }}"></span>
+                  <div style="width:74px;flex:none"><div data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C">{{ p.label }}</div><div data-fg="ink3" style="font-size:10px;color:#a59e90">{{ p.gloss }}</div></div>
+                  <div style="flex:1"><div data-fg="ink" style="font-size:14px;color:#26221C">{{ p.value }}</div><div data-fg="ink2" style="font-size:11px;color:#6e685d">{{ p.detail }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div data-bg="accentSoft" style="background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 11%,transparent);border-radius:16px;padding:14px 16px;margin-top:14px;display:flex;gap:11px;align-items:flex-start">
+              <span data-fg="accent" style="color:var(--acc,#B0722F);font-size:14px;margin-top:1px">◈</span>
+              <div data-fg="ink2" style="font-size:12px;line-height:1.55;color:#6e685d">A <b style="color:#26221C">Shukla</b> yoga on Anurādhā favours steady, relationship-minded effort. Good for repair, poor for confrontation.</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ REMEDIES ============ -->
+        <sc-if value="{{ show.remedies }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C;padding:8px 2px 3px">Remedies</div>
+            <div data-fg="ink2" style="font-size:12.5px;color:#6e685d;padding:0 2px 16px">Small, repeatable acts to steady Budha, your period lord.</div>
+
+            <div data-bg="accent" data-fg="onAccent" style="background:linear-gradient(135deg,var(--acc,var(--acc,#B0722F)),color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 68%,#000));border-radius:20px;padding:18px 20px;color:#FFF8EE;box-shadow:0 14px 30px -16px color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 60%,transparent)">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between">
+                <div><div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;opacity:.8">Current streak</div><div style="font-family:'Newsreader',serif;font-size:36px;line-height:1;margin-top:4px">{{ remedies.streakCount }} <span style="font-size:16px">days</span></div></div>
+                <div style="font-size:12px;opacity:.85;text-align:right">Best: 21 days</div>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:16px">
+                <sc-for list="{{ remedies.streakDots }}" as="d" hint-placeholder-count="7">
+                  <div style="flex:1;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;background:{{ d.bg }};color:{{ d.fg }}">{{ d.day }}</div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ remedies.list }}" as="r" hint-placeholder-count="4">
+                <div data-bg="surf" data-bd="hair" style="display:flex;align-items:center;gap:13px;background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:17px;padding:14px">
+                  <div data-field="screen" data-val="remedyDetail" onClick="{{ set }}" style="display:flex;align-items:center;gap:13px;flex:1;cursor:pointer">
+                    <span data-bg="accentSoft" data-fg="accent" style="width:42px;height:42px;border-radius:13px;flex:none;background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 15%,transparent);display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--acc,#B0722F)">{{ r.glyph }}</span>
+                    <div><div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#a59e90">{{ r.type }}</div><div data-fg="ink" style="font-size:14.5px;font-weight:600;color:#26221C;margin-top:1px">{{ r.title }}</div><div data-fg="ink2" style="font-size:11.5px;color:#6e685d">{{ r.cadence }}</div></div>
+                  </div>
+                  <div data-field="{{ r.field }}" onClick="{{ toggle }}" style="{{ r.sw.track }}"><span style="{{ r.sw.knob }}"></span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ REMEDY DETAIL ============ -->
+        <sc-if value="{{ show.remedyDetail }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div data-field="screen" data-val="remedies" onClick="{{ set }}" style="display:flex;align-items:center;gap:6px;padding:8px 2px 14px;cursor:pointer" data-fg="ink2"><span style="font-size:16px;color:#6e685d">‹</span><span style="font-size:13px;color:#6e685d">Remedies</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center">
+              <div style="position:relative;width:150px;height:150px;margin-bottom:16px">
+                <svg width="150" height="150" viewBox="0 0 150 150"><circle cx="75" cy="75" r="66" fill="none" stroke="rgba(38,34,28,.08)" stroke-width="10"/><circle cx="75" cy="75" r="66" fill="none" stroke="currentColor" style="color:var(--acc,#B0722F)" stroke-width="10" stroke-linecap="round" stroke-dasharray="276 414" transform="rotate(-90 75 75)"/></svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><span data-fg="accent" style="font-family:'Newsreader',serif;font-size:34px;color:var(--acc,#B0722F)">72</span><span data-fg="ink3" style="font-size:11px;color:#a59e90">of 108 today</span></div>
+              </div>
+              <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:22px;color:#26221C">Budha Bīja Mantra</div>
+              <div data-fg="ink2" style="font-size:13px;color:#6e685d;margin-top:3px">Oṃ Braṃ Brīṃ Brauṃ Saḥ Budhāya Namaḥ</div>
+            </div>
+            <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;padding:16px 18px;margin-top:20px">
+              <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:#a59e90;margin-bottom:10px">How & why</div>
+              <div data-fg="ink2" style="font-size:13px;line-height:1.6;color:#5a544a">Recite 108 times facing east, ideally within the hour after sunrise. Strengthens Budha (Mercury) — clarity of thought, speech and timing. A mālā of green or crystal beads helps you keep count.</div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:16px">
+              <sc-for list="{{ remedies.streakDots2 }}" as="d" hint-placeholder-count="7">
+                <div style="flex:1;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;background:{{ d.bg }};color:{{ d.fg }}">{{ d.day }}</div>
+              </sc-for>
+            </div>
+            <div data-bg="accent" data-fg="onAccent" style="background:var(--acc,#B0722F);color:#FFF8EE;text-align:center;padding:15px;border-radius:14px;font-size:15px;font-weight:600;margin-top:18px;cursor:pointer;box-shadow:0 8px 20px -8px color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 55%,transparent)">Mark today complete</div>
+          </div>
+        </sc-if>
+
+        <!-- ============ JOURNAL ============ -->
+        <sc-if value="{{ show.journal }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 2px 3px">
+              <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C">Today's log</div>
+              <span data-fg="accent" data-field="screen" data-val="journalTrends" onClick="{{ set }}" style="font-size:12px;font-weight:600;color:var(--acc,#B0722F);cursor:pointer">Trends →</span>
+            </div>
+            <div data-fg="ink2" style="font-size:12.5px;color:#6e685d;padding:0 2px 18px">Sat 19 Jul · a quiet check-in, just for you.</div>
+
+            <div data-fg="ink2" style="font-size:13px;font-weight:600;color:#26221C;margin-bottom:11px">How did the day feel?</div>
+            <div style="display:flex;gap:8px;margin-bottom:22px">
+              <sc-for list="{{ journal.ratings }}" as="r" hint-placeholder-count="5">
+                <div data-field="journalRating" data-val="{{ r.val }}" onClick="{{ set }}" style="{{ r.style }}"><span style="font-size:20px;color:{{ r.color }}">{{ r.glyph }}</span><span data-fg="ink2" style="font-size:10px;font-weight:600;color:{{ r.color }}">{{ r.label }}</span></div>
+              </sc-for>
+            </div>
+
+            <div data-fg="ink2" style="font-size:13px;font-weight:600;color:#26221C;margin-bottom:11px">What shaped it?</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px">
+              <span data-bg="surf" data-bd="hair" style="font-size:12.5px;padding:8px 13px;border-radius:20px;background:#fff;border:1px solid rgba(38,34,28,.12);color:#6e685d" data-fg="ink2">Work</span>
+              <span data-bd="accent" style="font-size:12.5px;padding:8px 13px;border-radius:20px;background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 9%,transparent);border:1px solid var(--acc,#B0722F);color:var(--acc-d,#8a5a22)">Family</span>
+              <span data-bg="surf" data-bd="hair" style="font-size:12.5px;padding:8px 13px;border-radius:20px;background:#fff;border:1px solid rgba(38,34,28,.12);color:#6e685d" data-fg="ink2">Health</span>
+              <span data-bg="surf" data-bd="hair" style="font-size:12.5px;padding:8px 13px;border-radius:20px;background:#fff;border:1px solid rgba(38,34,28,.12);color:#6e685d" data-fg="ink2">Rest</span>
+              <span data-bg="surf" data-bd="hair" style="font-size:12.5px;padding:8px 13px;border-radius:20px;background:#fff;border:1px solid rgba(38,34,28,.12);color:#6e685d" data-fg="ink2">+ add</span>
+            </div>
+
+            <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.1);border-radius:16px;padding:15px;min-height:96px" data-fg="ink3"><span style="font-size:13.5px;color:#a59e90">Anything worth remembering? I followed the finishing advice and it held…</span></div>
+            <div data-bg="accent" data-fg="onAccent" data-field="screen" data-val="journalTrends" onClick="{{ set }}" style="background:var(--acc,#B0722F);color:#FFF8EE;text-align:center;padding:15px;border-radius:14px;font-size:15px;font-weight:600;margin-top:16px;cursor:pointer;box-shadow:0 8px 20px -8px color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 55%,transparent)">Save entry</div>
+          </div>
+        </sc-if>
+
+        <!-- ============ JOURNAL TRENDS ============ -->
+        <sc-if value="{{ show.journalTrends }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div data-field="screen" data-val="journal" onClick="{{ set }}" style="display:flex;align-items:center;gap:6px;padding:8px 2px 12px;cursor:pointer" data-fg="ink2"><span style="font-size:16px;color:#6e685d">‹</span><span style="font-size:13px;color:#6e685d">Log</span></div>
+            <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C;padding:0 2px 4px">Your patterns</div>
+            <div data-fg="ink2" style="font-size:12.5px;color:#6e685d;padding:0 2px 18px">Last 14 days · reflection, not prediction.</div>
+
+            <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:20px;padding:18px 16px;box-shadow:0 14px 34px -24px rgba(20,16,30,.18)" data-shadow>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px"><span data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C">Daily mood</span><span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10px;color:#a59e90">avg 3.9</span></div>
+              <div style="display:flex;align-items:flex-end;gap:5px;height:90px">
+                <sc-for list="{{ journal.trendBars }}" as="b" hint-placeholder-count="14">
+                  <div style="{{ b.barStyle }}"></div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:11px;margin-top:16px">
+              <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:16px;padding:15px;display:flex;gap:12px;align-items:flex-start">
+                <span style="width:30px;height:30px;border-radius:50%;flex:none;background:rgba(94,138,107,.14);display:flex;align-items:center;justify-content:center;color:#5E8A6B;font-size:14px">↑</span>
+                <div data-fg="ink2" style="font-size:13px;line-height:1.55;color:#5a544a">Your brightest days cluster around <b style="color:#26221C">Amrit windows</b> — the openings you acted in scored 22% higher.</div>
+              </div>
+              <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:16px;padding:15px;display:flex;gap:12px;align-items:flex-start">
+                <span style="width:30px;height:30px;border-radius:50%;flex:none;background:rgba(176,138,58,.16);display:flex;align-items:center;justify-content:center;color:#B08A3A;font-size:14px">◐</span>
+                <div data-fg="ink2" style="font-size:13px;line-height:1.55;color:#5a544a"><b style="color:#26221C">Wednesdays</b> trend a little lower — fittingly, your fasting day. Plan lightly.</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ PROFILES ============ -->
+        <sc-if value="{{ show.profiles }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C;padding:8px 2px 3px">Charts you follow</div>
+            <div data-fg="ink2" style="font-size:12.5px;color:#6e685d;padding:0 2px 18px">Switch whose sky Antara reads. Family and friends stay private to you.</div>
+            <sc-for list="{{ profiles }}" as="p" hint-placeholder-count="4">
+              <div style="{{ p.style }}">
+                <div style="{{ p.avatar }}">{{ p.initials }}</div>
+                <div style="flex:1"><div style="display:flex;align-items:center;gap:8px"><span data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">{{ p.name }}</span><span data-bg="surf2" data-fg="ink2" style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(38,34,28,.06);color:#6e685d">{{ p.rel }}</span></div><div data-fg="ink3" style="font-size:11.5px;color:#a59e90;margin-top:2px">{{ p.born }}</div></div>
+                <sc-if value="{{ p.active }}" hint-placeholder-val="{{ true }}"><span data-fg="accent" style="width:22px;height:22px;border-radius:50%;background:var(--acc,#B0722F);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">✓</span></sc-if>
+              </div>
+            </sc-for>
+            <div data-bd="hair2" style="display:flex;align-items:center;justify-content:center;gap:9px;padding:15px;border-radius:16px;border:1.5px dashed rgba(38,34,28,.2);color:#6e685d;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px" data-fg="ink2"><span style="font-size:18px">+</span>Add a birth profile</div>
+          </div>
+        </sc-if>
+
+        <!-- ============ NOTIFICATIONS ============ -->
+        <sc-if value="{{ show.notifications }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 120px;animation:anfade .5s ease">
+            <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:24px;font-weight:500;color:#26221C;padding:8px 2px 14px">Alerts</div>
+            <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;margin:0 2px 10px">How they look</div>
+            <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:24px">
+              <sc-for list="{{ notif.pushes }}" as="n" hint-placeholder-count="3">
+                <div data-bg="surf" data-bd="hair" style="background:rgba(255,255,255,.75);backdrop-filter:blur(10px);border:1px solid rgba(38,34,28,.07);border-radius:17px;padding:12px 14px;display:flex;gap:11px;box-shadow:0 6px 18px -12px rgba(20,16,30,.25)" data-shadow>
+                  <span style="width:32px;height:32px;border-radius:9px;flex:none;background:{{ n.accent }};display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px">◈</span>
+                  <div style="flex:1"><div style="display:flex;justify-content:space-between"><span data-fg="ink" style="font-size:13.5px;font-weight:600;color:#26221C">{{ n.title }}</span><span data-fg="ink3" style="font-size:10.5px;color:#a59e90">{{ n.time }}</span></div><div data-fg="ink2" style="font-size:12px;color:#6e685d;margin-top:2px;line-height:1.4">{{ n.body }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;margin:0 2px 10px">What to send</div>
+            <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;overflow:hidden">
+              <sc-for list="{{ notif.settings }}" as="n" hint-placeholder-count="5">
+                <div data-bd="hair" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-top:1px solid rgba(38,34,28,.06)">
+                  <div style="flex:1"><div data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C">{{ n.title }}</div><div data-fg="ink2" style="font-size:11.5px;color:#6e685d;margin-top:1px">{{ n.sub }}</div></div>
+                  <div data-field="{{ n.field }}" onClick="{{ toggle }}" style="{{ n.sw.track }}"><span style="{{ n.sw.knob }}"></span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ PAYWALL ============ -->
+        <sc-if value="{{ show.paywall }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 40px;animation:anfade .5s ease">
+            <div style="display:flex;justify-content:flex-end;padding:2px"><span data-bg="surf" data-fg="ink2" style="width:30px;height:30px;border-radius:50%;background:rgba(38,34,28,.06);display:flex;align-items:center;justify-content:center;color:#6e685d;cursor:pointer">✕</span></div>
+            <div style="text-align:center;padding:6px 6px 22px">
+              <div style="width:52px;height:52px;margin:0 auto 14px;border-radius:50%;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 45%,#fff),var(--acc,var(--acc,#B0722F)));display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff">◈</div>
+              <div data-fg="ink" style="font-family:'Newsreader',serif;font-size:25px;font-weight:500;color:#26221C;line-height:1.25">Read your sky,<br/>every single day</div>
+              <div data-fg="ink2" style="font-size:13px;color:#6e685d;margin-top:8px;line-height:1.5;max-width:270px;margin-left:auto;margin-right:auto">Antara Pro unlocks the decision assistant, full charts, and remedies tracking.</div>
+            </div>
+
+            <div data-bg="surf2" style="display:flex;gap:4px;background:rgba(38,34,28,.05);border-radius:14px;padding:4px;margin-bottom:16px;position:relative">
+              <div data-field="billing" data-val="month" onClick="{{ set }}" style="{{ paywall.monthSeg }}">Monthly</div>
+              <div data-field="billing" data-val="annual" onClick="{{ set }}" style="{{ paywall.yearSeg }}">Annual</div>
+            </div>
+            <div data-bg="surf" data-bd="accent" style="background:#fff;border:1.5px solid var(--acc,#B0722F);border-radius:20px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 14px 30px -20px color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 50%,transparent)" data-shadow>
+              <div><div data-fg="ink" style="font-family:'Newsreader',serif;font-size:30px;color:#26221C">{{ paywall.price }}<span data-fg="ink3" style="font-size:15px;color:#a59e90">{{ paywall.unit }}</span></div><div data-fg="accent" style="font-size:12px;color:var(--acc-d,#8a5a22);margin-top:2px">{{ paywall.note }}</div></div>
+              <span data-bg="accentSoft" data-fg="accent" style="font-size:11px;font-weight:700;padding:6px 11px;border-radius:20px;background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 15%,transparent);color:var(--acc-d,#8a5a22)">7-day free trial</span>
+            </div>
+
+            <div style="margin:20px 0 8px;display:flex;padding:0 4px"><span style="flex:1"></span><span data-fg="ink3" style="width:48px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#a59e90">Free</span><span data-fg="accent" style="width:48px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--acc,#B0722F)">Pro</span></div>
+            <div data-bg="surf" data-bd="hair" style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;overflow:hidden">
+              <sc-for list="{{ paywall.compare }}" as="c" hint-placeholder-count="8">
+                <div data-bd="hair" style="display:flex;align-items:center;padding:12px 16px;border-top:1px solid rgba(38,34,28,.06)">
+                  <span data-fg="ink" style="flex:1;font-size:13px;color:#26221C">{{ c.label }}</span>
+                  <span data-fg="ink3" style="width:48px;text-align:center;color:#a59e90;font-size:14px">{{ c.freeMark }}</span>
+                  <span data-fg="accent" style="width:48px;text-align:center;color:var(--acc,#B0722F);font-size:15px">✓</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div data-bg="accent" data-fg="onAccent" style="background:var(--acc,#B0722F);color:#FFF8EE;text-align:center;padding:16px;border-radius:14px;font-size:15.5px;font-weight:600;margin-top:18px;cursor:pointer;box-shadow:0 10px 24px -8px color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 60%,transparent)">Start free trial</div>
+            <div style="text-align:center;margin-top:14px"><span data-fg="ink2" style="font-size:12px;color:#6e685d">Just need one chart read? </span><span data-fg="accent" style="font-size:12px;font-weight:600;color:var(--acc,#B0722F);cursor:pointer">Buy a one-off report →</span></div>
+            <div data-fg="ink3" style="text-align:center;font-size:11px;color:#a59e90;margin-top:10px">Restore purchase · Terms · Privacy</div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <!-- house detail bottom sheet (screen-level overlay) -->
+      <sc-if value="{{ chart.sheet.open }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:45;display:flex;flex-direction:column;justify-content:flex-end">
+          <div data-field="sheetHouse" data-val="" onClick="{{ set }}" style="position:absolute;inset:0;background:rgba(20,16,30,.34);animation:anscrim .25s ease"></div>
+          <div data-bg="surf" style="position:relative;background:#FBF9F4;border-radius:26px 26px 0 0;padding:10px 22px 34px;box-shadow:0 -14px 40px -14px rgba(20,16,30,.3);animation:ansheet .3s cubic-bezier(.2,.8,.2,1)">
+            <div style="width:38px;height:4px;border-radius:3px;background:rgba(38,34,28,.16);margin:4px auto 16px"></div>
+            <div style="display:flex;align-items:center;gap:13px;margin-bottom:14px">
+              <div data-bg="accentSoft" data-fg="accent" style="width:46px;height:46px;border-radius:14px;background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 15%,transparent);display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:20px;color:var(--acc,#B0722F)">{{ chart.sheet.n }}</div>
+              <div>
+                <div data-fg="ink" style="font-size:17px;font-weight:600;color:#26221C">{{ chart.sheet.karaka }} · House {{ chart.sheet.n }}</div>
+                <div data-fg="ink2" style="font-size:12.5px;color:#6e685d">{{ chart.sheet.sign }} · {{ chart.sheet.meaning }}</div>
+              </div>
+            </div>
+            <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90;margin-bottom:8px">Placements</div>
+            <sc-for list="{{ chart.sheet.planets }}" as="p" hint-placeholder-count="2">
+              <div data-bd="hair" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(38,34,28,.07)">
+                <span data-fg="accent" style="width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 10%,transparent);display:flex;align-items:center;justify-content:center;color:var(--acc,#B0722F);font-size:15px">{{ p.glyph }}</span>
+                <span data-fg="ink" style="font-size:14px;color:#26221C">{{ p.name }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- bottom tab bar -->
+      <sc-if value="{{ ui.showTabs }}" hint-placeholder-val="{{ true }}">
+        <div data-bg="surf" data-bd="hair" style="flex:none;position:relative;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid rgba(38,34,28,.08);padding:9px 12px {{ ui.tabPad }};display:flex;justify-content:space-around">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+            <div data-field="screen" data-val="{{ t.k }}" onClick="{{ set }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer">
+              <span style="display:flex"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" style="color:{{ t.color }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d }}"></path></svg></span>
+              <span style="font-size:9.5px;font-weight:600;color:{{ t.color }}">{{ t.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- home indicator / gesture bar -->
+      <div style="flex:none;position:relative;z-index:25;height:{{ ui.indH }};display:flex;align-items:center;justify-content:center;pointer-events:none">
+        <span style="{{ ui.indStyle }}"></span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:740,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'login', loginMode: 'signin', loginEmail: 'ananya.rao@gmail.com', loginPw: '', loginShowPw: false, loginTried: false,
+    platform: 'ios', theme: 'light', accent: 'amber', base: 'paper',
+    timeUnknown: false, whyOpen: true, birthSel: 'blr', curSel: 'pnq', locOpen: '', locQ: '',
+    daActivity: 'travel', daRange: 'week', daPhase: 'input',
+    chartStyle: 'north', chartVarga: 'd1', sheetHouse: '',
+    dPath: 'Me', strPlanet: 'Me', strHouse: '7', billing: 'annual', journalRating: '4',
+    rem_mantra: true, rem_fast: true, rem_charity: false, rem_gem: false,
+    nt_dasha: true, nt_transit: true, nt_rahu: true, nt_sade: false, nt_daily: true,
+  };
+
+  componentDidMount() {
+    if (!document.getElementById('antara-dark')) {
+      // [light acc, light acc-dark, dark acc, dark acc-dark]
+      const P = {
+        amber:  ['#B0722F','#8a5a22','#DCA85F','#EBC48C'],
+        indigo: ['#4C5BA6','#3B4890','#8E9BE0','#B2BBED'],
+        sage:   ['#5E8A6B','#496F56','#86B394','#A9CDB5'],
+        clay:   ['#B0654A','#8C4E38','#D89377','#E8AF97'],
+        plum:   ['#8A5A8F','#6D4372','#BE93C2','#D6B2D9'],
+        slate:  ['#566579','#404C5D','#93A2B8','#B4C0D0'],
+      };
+      let acc = '';
+      for (const k in P){ const p = P[k];
+        acc += `[data-accent="${k}"]{--acc:${p[0]};--acc-d:${p[1]}}[data-theme="dark"][data-accent="${k}"]{--acc:${p[2]};--acc-d:${p[3]}}`; }
+      // light-mode background bases: [canvas, surface, raised]
+      const B = {
+        paper: ['#F1ECE2','#ffffff','#F4EFE6'],
+        sand:  ['#ECE3D3','#FBF7EF','#F2EADB'],
+        mist:  ['#EBEDF1','#ffffff','#F2F3F6'],
+        fog:   ['#EAE7E1','#FBFAF7','#F1EEE8'],
+        blush: ['#F1E8E3','#FFFDFB','#F6EEE9'],
+      };
+      for (const k in B){ const b = B[k]; const g = `[data-base="${k}"]:not([data-theme="dark"])`;
+        acc += `${g} [data-bg="bg"]{background:${b[0]}!important}${g} [data-bg="surf"]{background:${b[1]}!important}${g} [data-bg="surf2"]{background:${b[2]}!important}`; }
+      const s = document.createElement('style');
+      s.id = 'antara-dark';
+      s.textContent = `
+[data-theme="dark"] [data-bg="bg"]{background:#100F17!important}
+[data-theme="dark"] [data-bg="surf"]{background:#1C1B27!important}
+[data-theme="dark"] [data-bg="surf2"]{background:#25232F!important}
+[data-theme="dark"] [data-bg="inv"]{background:#F0EDE6!important}
+[data-theme="dark"] [data-fg="ink"]{color:#F0EDE6!important}
+[data-theme="dark"] [data-fg="ink2"]{color:#A6A0AE!important}
+[data-theme="dark"] [data-fg="ink3"]{color:#736D7C!important}
+[data-theme="dark"] [data-fg="inv"]{color:#100F17!important}
+[data-theme="dark"] [data-fg="onAccent"]{color:#160f04!important}
+[data-theme="dark"] [data-bd="hair"]{border-color:rgba(255,255,255,.10)!important}
+[data-theme="dark"] [data-bd="hair2"]{border-color:rgba(255,255,255,.18)!important}
+[data-theme="dark"] [data-shadow]{box-shadow:0 18px 40px -22px rgba(0,0,0,.6)!important}
+[data-theme="dark"] [data-bg="bg"] b{color:#F0EDE6!important}` + acc;
+      document.head.appendChild(s);
+    }
+  }
+
+  set = (e) => { const d = e.currentTarget.dataset; this.setState({ [d.field]: d.val }); };
+  pick = (e) => { const d = e.currentTarget.dataset; this.setState(s => ({ [d.field]: s[d.field]===d.val ? '' : d.val })); };
+  goPlanet = (e) => { this.setState({ screen:'shadbala', strPlanet:e.currentTarget.dataset.val }); };
+  noop = () => {};
+  onEmail = (e) => this.setState({ loginEmail: e.target.value });
+  onPw = (e) => this.setState({ loginPw: e.target.value });
+  submitLogin = () => { const s=this.state; const ok=/^\S+@\S+\.\S+$/.test(s.loginEmail)&&s.loginPw.length>=8;
+    if(ok) this.setState({ screen:'home', loginTried:false }); else this.setState({ loginTried:true }); };
+  submitSignup = this.submitLogin;
+  locFocus = (e) => this.setState({ locOpen: e.currentTarget.dataset.which, locQ: '' });
+  locInput = (e) => this.setState({ locOpen: e.currentTarget.dataset.which, locQ: e.target.value });
+  locBlur = () => this.setState({ locOpen: '', locQ: '' });
+  locPick = (e) => { e.preventDefault(); const d=e.currentTarget.dataset; this.setState({ [d.which+'Sel']: d.val, locOpen: '', locQ: '' }); e.currentTarget.ownerDocument.activeElement && e.currentTarget.ownerDocument.activeElement.blur(); };
+  toggle = (e) => { const f = e.currentTarget.dataset.field; this.setState(s => ({ [f]: !s[f] })); };
+
+  // themed helpers -------------------------------------------------
+  navRow(active) {
+    return `display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;font-size:13px;cursor:pointer;font-weight:${active?600:500};color:${active?'var(--acc-d,#8a5a22)':'#5a544a'};background:${active?'color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 15%,transparent)':'transparent'}`;
+  }
+  chip(active) {
+    return `display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid ${active?'var(--acc,#B0722F)':'rgba(38,34,28,.14)'};background:${active?'var(--acc,#B0722F)':'transparent'};color:${active?'#FFF8EE':'#6e685d'}`;
+  }
+  seg(active) {
+    return `flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid ${active?'var(--acc,#B0722F)':'rgba(38,34,28,.14)'};background:${active?'color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 8%,transparent)':'transparent'};color:${active?'var(--acc-d,#8a5a22)':'#6e685d'}`;
+  }
+  // semantic (theme-agnostic tints) --------------------------------
+  kindColor(k){ return k==='good'?'#5E8A6B':k==='bad'?'#B05A44':'#B08A3A'; }
+  kindTint(k){ return k==='good'?'rgba(94,138,107,.13)':k==='bad'?'rgba(176,90,68,.13)':'rgba(176,138,58,.14)'; }
+  kindLabel(k){ return k==='good'?'Auspicious':k==='bad'?'Avoid':'Neutral'; }
+
+  iconPath(name) {
+    return {
+      home:'M3 9.5 11 3l8 6.5V19a1 1 0 0 1-1 1h-4v-6H8v6H4a1 1 0 0 1-1-1z',
+      timeline:'M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16M11 6v5l3.5 2',
+      chart:'M11 2 20 11l-9 9-9-9zM11 2v18M2 11h18',
+      remedies:'M11 3c2 3 5 4.5 5 8a5 5 0 0 1-10 0c0-3.5 3-5 5-8z',
+      profile:'M11 3.9a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2M4.5 19c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6',
+    }[name];
+  }
+
+  renderVals() {
+    const s = this.state;
+    const ios = s.platform === 'ios';
+    const scr = s.screen;
+    const show = k => scr === k;
+
+    // nav
+    const p1 = [['login','Login'],['onboarding','Sign up · birth details'],['home','Home · Daily'],['timeline','Day timeline'],['decision','Decision assistant']];
+    const p2 = [['chart','Birth chart'],['dasha','Dasha timeline'],['shadbala','Shadbala'],['bhavabala','Bhavabala'],['panchang','Panchang'],['remedies','Remedies'],['remedyDetail','Remedy detail'],['journal','Journal'],['journalTrends','Trends'],['profiles','Profiles'],['notifications','Notifications'],['paywall','Paywall']];
+    const nav = arr => arr.map((r,i) => ({ k:r[0], label:r[1], n:String(i+1).padStart(2,'0'), rowStyle:this.navRow(scr===r[0]) }));
+    const navP1 = nav(p1); const navP2 = p2.map((r,i)=>({k:r[0],label:r[1],n:String(i+6).padStart(2,'0'),rowStyle:this.navRow(scr===r[0])}));
+
+    // tab bar
+    const tabMap = { home:'home', timeline:'timeline', decision:'timeline', panchang:'timeline', chart:'chart', dasha:'chart', shadbala:'chart', bhavabala:'chart', remedies:'remedies', remedyDetail:'remedies', journal:'profile', journalTrends:'profile', profiles:'profile', notifications:'profile' };
+    const at = tabMap[scr] || '';
+    const tabDefs = [['home','Home','home'],['timeline','Timeline','timeline'],['chart','Chart','chart'],['remedies','Remedies','remedies'],['profiles','Profile','profile']];
+    const tabs = tabDefs.map(t => { const on = at===t[2]; return { k:t[0], label:t[1], color:on?'var(--acc,#B0722F)':'#a9a294', d:this.iconPath(t[2]) }; });
+
+    // timing windows (home summary)
+    const win = (name,gloss,tag,time,kind) => ({ name, gloss, tag:this.kindLabel(kind), time, timeColor:this.kindColor(kind),
+      rowStyle:`display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:15px;background:${this.kindTint(kind)};margin-bottom:8px`,
+      bar:`flex:none;width:4px;height:34px;border-radius:3px;background:${this.kindColor(kind)}`,
+      tagStyle:`font-size:11px;font-weight:600;color:${this.kindColor(kind)};margin-top:2px` });
+    const windows = [ win('Abhijit Muhurta','midday victory hour','',' 11:58–12:49','good'), win('Rahu Kaal','avoid new starts','','9:07–10:44','bad'), win('Amrit Choghadiya','nectar window','','2:20–3:57','good') ];
+
+    // full timeline
+    const tl = (start,name,gloss,range,kind) => ({ start, name, gloss, range, kindLabel:this.kindLabel(kind),
+      timeColor:this.kindColor(kind), dot:this.kindColor(kind), dotRing:this.kindTint(kind), line:'rgba(38,34,28,.1)',
+      cardStyle:`flex:1;background:${this.kindTint(kind)};border-radius:14px;padding:12px 14px;margin-bottom:9px`,
+      badge:`font-size:10px;font-weight:600;color:${this.kindColor(kind)};background:${this.kindTint(kind)};padding:3px 8px;border-radius:20px;border:1px solid ${this.kindColor(kind)}33` });
+    const timeline = [
+      tl('6:02','Sunrise · Amrit','Nectar Choghadiya opens the day','6:02–7:39 AM','good'),
+      tl('7:39','Rog Choghadiya','Illness period — hold sensitive matters','7:39–9:07 AM','bad'),
+      tl('9:07','Rahu Kaal','Avoid launching anything new','9:07–10:44 AM','bad'),
+      tl('10:44','Gulika Kaal','Recurs on itself — routine only','10:44–11:58 AM','neutral'),
+      tl('11:58','Abhijit Muhurta','Midday victory hour — most auspicious','11:58–12:49 PM','good'),
+      tl('12:49','Char Choghadiya','Movable — good for travel & errands','12:49–2:20 PM','neutral'),
+      tl('2:20','Amrit Choghadiya','Nectar window — sign, commit, begin','2:20–3:57 PM','good'),
+      tl('3:57','Yamaganda','Obstruction period — defer decisions','3:57–5:24 PM','bad'),
+      tl('6:47','Sunset','Sandhya — reflection & closing','6:47 PM','neutral'),
+    ];
+
+    // decision assistant
+    const acts = [['travel','Travel','✈'],['purchase','Purchase','◈'],['contract','Contract','✎'],['venture','New venture','❋'],['medical','Medical','✚']];
+    const daActivities = acts.map(a => ({ k:a[0], label:a[1], glyph:a[2], chipStyle:this.chip(s.daActivity===a[0]) }));
+    const ranges = [['today','Today'],['week','Next 7 days'],['month','This month']];
+    const daRanges = ranges.map(r => ({ k:r[0], label:r[1], style:this.seg(s.daRange===r[0]) }));
+    const res = (day,time,score,kind,reason) => { const c=this.kindColor(kind); const dash=`${Math.round(score/100*125.6)} 125.6`;
+      return { day, time, score, reason, ring:c, dash,
+        cardStyle:`display:flex;align-items:center;gap:14px;background:${this.kindTint(kind)};border-radius:16px;padding:14px;margin-bottom:9px` }; };
+    const daResults = [
+      res('Tue 22','2:20 PM',92,'good','Amrit Choghadiya + Moon trine your ascendant lord.'),
+      res('Sun 20','11:58 AM',84,'good','Abhijit Muhurta, but Sunday weakens long journeys.'),
+      res('Thu 24','10:10 AM',61,'neutral','Clear of Rahu Kaal, yet Mercury still retrograde.'),
+      res('Wed 23','4:30 PM',34,'bad','Falls inside Yamaganda — avoid departure.'),
+    ];
+    const actLabel = { travel:'travel', purchase:'a purchase', contract:'a contract', venture:'a new venture', medical:'a procedure' }[s.daActivity];
+
+    // onboarding
+    const LOCS=[['blr','Bengaluru','Karnataka, India'],['pnq','Pune','Maharashtra, India'],['bom','Mumbai','Maharashtra, India'],['del','New Delhi','Delhi, India'],['maa','Chennai','Tamil Nadu, India'],['hyd','Hyderabad','Telangana, India'],['ccu','Kolkata','West Bengal, India'],['amd','Ahmedabad','Gujarat, India'],['jai','Jaipur','Rajasthan, India'],['lko','Lucknow','Uttar Pradesh, India'],['vns','Varanasi','Uttar Pradesh, India'],['mys','Mysuru','Karnataka, India'],['cok','Kochi','Kerala, India'],['trv','Thiruvananthapuram','Kerala, India'],['ixc','Chandigarh','Punjab, India'],['bbi','Bhubaneswar','Odisha, India'],['pat','Patna','Bihar, India'],['nag','Nagpur','Maharashtra, India'],['goi','Panaji','Goa, India'],['ktm','Kathmandu','Nepal'],['cmb','Colombo','Sri Lanka'],['sin','Singapore','Singapore'],['dxb','Dubai','UAE'],['lon','London','United Kingdom'],['nyc','New York','USA'],['sfo','San Francisco','USA'],['yyz','Toronto','Canada'],['syd','Sydney','Australia']];
+    const LOC={}; LOCS.forEach(l=>LOC[l[0]]={city:l[1],region:l[2]});
+    const locField=w=>{ const sel=LOC[s[w+'Sel']]; const open=s.locOpen===w; const q=open?s.locQ:''; const ql=q.trim().toLowerCase();
+      const m=LOCS.filter(l=>!ql||l[1].toLowerCase().includes(ql)||l[2].toLowerCase().includes(ql)).slice(0,8);
+      return { open, q, value:open?q:sel.city, region:open?'':sel.region, empty:open&&m.length===0, hintOn:open, hint:'Only supported locations can be selected — '+LOCS.length+' cities available',
+        boxStyle:`background:#fff;border:1px solid ${open?'var(--acc,#B0722F)':'rgba(38,34,28,.12)'};border-radius:13px;padding:13px;display:flex;align-items:center;gap:9px`,
+        options:m.map((l,i,a)=>({id:l[0],city:l[1],region:l[2],style:`display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;${l[0]===s[w+'Sel']?'background:color-mix(in srgb,var(--acc,#B0722F) 9%,transparent);':''}${i<a.length-1?'border-bottom:1px solid rgba(38,34,28,.07)':''}`})) }; };
+
+    // ============ PHASE 2 DATA ============
+    const G = { Su:'☉',Mo:'☽',Ma:'♂',Me:'☿',Ju:'♃',Ve:'♀',Sa:'♄',Ra:'☊',Ke:'☋' };
+    const NAME = { Su:'Surya · Sun',Mo:'Chandra · Moon',Ma:'Mangala · Mars',Me:'Budha · Mercury',Ju:'Guru · Jupiter',Ve:'Shukra · Venus',Sa:'Shani · Saturn',Ra:'Rahu · North node',Ke:'Ketu · South node' };
+    const SIGN = ['Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces','Aries','Taurus','Gemini','Cancer','Leo','Virgo'];
+    const MEAN = ['self, body, vitality','wealth, speech, family','courage, siblings, effort','home, mother, inner peace','creativity, children, mind','health, service, debts','partnership & contracts','depth, change, the hidden','fortune, belief, father','career, status, action','gains, friends, networks','release, rest, moksha'];
+    const KARAKA = ['Lagna','Dhana','Sahaja','Sukha','Putra','Ari','Yuvati','Randhra','Dharma','Karma','Labha','Vyaya'];
+    const placeD1 = {1:['Me','Ke'],3:['Ju'],5:['Sa'],6:['Ra'],9:['Ma'],10:['Mo'],11:['Su','Ve']};
+    const placeD9 = {1:['Su'],2:['Mo'],4:['Sa','Ke'],7:['Ma'],9:['Ve','Me'],10:['Ra'],12:['Ju']};
+    const place = s.chartVarga==='d9'?placeD9:placeD1;
+    const NPTS = {1:'150,0 225,75 150,150 75,75',2:'0,0 150,0 75,75',3:'0,0 75,75 0,150',4:'0,150 75,75 150,150 75,225',5:'0,150 75,225 0,300',6:'0,300 75,225 150,300',7:'150,300 75,225 150,150 225,225',8:'150,300 225,225 300,300',9:'300,300 225,225 300,150',10:'300,150 225,225 150,150 225,75',11:'300,150 225,75 300,0',12:'300,0 225,75 150,0'};
+    const NC = {1:[150,58],2:[75,26],3:[26,78],4:[64,150],5:[26,224],6:[75,276],7:[150,244],8:[225,276],9:[276,224],10:[238,150],11:[276,78],12:[225,26]};
+    const selH = s.sheetHouse;
+    const northHouses = Object.keys(NPTS).map(k=>{ const n=+k; const pl=place[n]||[]; return { n, points:NPTS[k], nx:NC[k][0], ny:NC[k][1]-13, gx:NC[k][0], gy:NC[k][1]+9, glyphs:pl.map(p=>G[p]).join('  '), val:String(n), fill:String(selH)===String(n)?'color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 14%,transparent)':'rgba(0,0,0,0)' }; });
+    const sPos = {0:'Pisces',1:'Aries',2:'Taurus',3:'Gemini',4:'Aquarius',7:'Cancer',8:'Capricorn',11:'Leo',12:'Sagittarius',13:'Scorpio',14:'Libra',15:'Virgo'};
+    const signHouse = {}; SIGN.forEach((sg,i)=>signHouse[sg]=i+1);
+    const southCells = Array.from({length:16},(_,i)=>{ const sg=sPos[i]; if(!sg){ const center=i===5; return {blank:true,isSign:false,center,val:'',tap:this.set,label:center?(s.chartVarga==='d9'?'D9':'D1'):'',sub:center?(s.chartVarga==='d9'?'Navāmśa':'Rāśi'):'',cellStyle:'border:1px solid rgba(140,120,100,.4);display:flex;flex-direction:column;align-items:center;justify-content:center'}; } const h=signHouse[sg]; const pl=place[h]||[]; const asc=h===1; return { blank:false, isSign:true, center:false, sign:sg, house:h, val:String(h), tap:this.set, asc, ascMark:asc?'As':'', glyphs:pl.map(p=>G[p]).join('  '), cellStyle:`border:1px solid rgba(140,120,100,.4);cursor:pointer;padding:6px;display:flex;flex-direction:column;${String(selH)===String(h)?'background:color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 14%,transparent);':''}` }; });
+    const grahaLegend = Object.keys(G).map(k=>({glyph:G[k],name:k}));
+    let sheet=null;
+    if(selH && scr==='chart'){ const n=+selH; const pl=place[n]||[]; sheet={ open:true, n, sign:SIGN[n-1], karaka:KARAKA[n-1], meaning:MEAN[n-1], planets: pl.length?pl.map(p=>({glyph:G[p],name:NAME[p]})):[{glyph:'·',name:'No planets — an empty house'}] }; }
+    const chartTitle = s.chartVarga==='d9'?'Navāmśa · D9':'Rāśi · D1';
+    const chartSub = s.chartVarga==='d9'?'Soul, marriage & inner strength':'The birth chart · outer life';
+
+    const ORD=['Ke','Ve','Su','Mo','Ma','Ra','Ju','Sa','Me'];
+    const YRS={Ke:7,Ve:20,Su:6,Mo:10,Ma:7,Ra:18,Ju:16,Sa:19,Me:17};
+    const SH={Su:'Surya',Mo:'Chandra',Ma:'Mangala',Me:'Budha',Ju:'Guru',Ve:'Shukra',Sa:'Shani',Ra:'Rahu',Ke:'Ketu'};
+    const DAY=86400000, YR=365.25*DAY, NOW=Date.UTC(2026,9,1,9,41), BIRTH=Date.UTC(1994,7,14,3,42);
+    const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const LV=[['Mahādaśā','Life chapter · years long'],['Antardaśā','Sub-period · months to years'],['Pratyantardaśā','Sub-sub-period · weeks to months'],['Sūkṣmadaśā','Subtle period · days to weeks'],['Prāṇadaśā','Breath period · hours to days']];
+    const fd=(ts,l)=>{ const d=new Date(ts); const p=n=>String(n).padStart(2,'0'); if(l===0) return String(d.getUTCFullYear()); if(l===1) return MON[d.getUTCMonth()]+' '+d.getUTCFullYear(); if(l<4) return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' ’'+String(d.getUTCFullYear()).slice(2); return d.getUTCDate()+' '+MON[d.getUTCMonth()]+', '+p(d.getUTCHours())+':'+p(d.getUTCMinutes()); };
+    const fdur=ms=>{ const y=ms/YR; if(y>=1){ const m=Math.floor((y%1)*12); return Math.floor(y)+'y'+(m?' '+m+'m':''); } const dd=ms/DAY; if(dd>=60){ return Math.floor(dd/30.44)+'m '+Math.round(dd%30.44)+'d'; } if(dd>=1){ const h=Math.round((dd%1)*24); return Math.floor(dd)+'d'+(h?' '+h+'h':''); } const h=ms/3600000; return Math.floor(h)+'h '+Math.round((h%1)*60)+'m'; };
+    const subs=(p,a,b)=>{ const D=b-a; const i=ORD.indexOf(p); let x=a; const o=[]; for(let k=0;k<9;k++){ const q=ORD[(i+k)%9]; const d=D*YRS[q]/120; o.push({p:q,start:x,end:x+d}); x+=d; } return o; };
+    const mahas=[]; { let x=Date.UTC(2021,10,8)-35*YR; ['Ju','Sa','Me','Ke','Ve','Su','Mo'].forEach(p=>{ mahas.push({p,start:x,end:x+YRS[p]*YR}); x+=YRS[p]*YR; }); }
+    const childrenOf=n=>n?subs(n.p,n.start,n.end):mahas;
+    // current chain
+    const chain=[]; { let list=mahas; for(let l=0;l<5;l++){ const n=list.find(z=>z.start<=NOW&&NOW<z.end); chain.push(n); list=subs(n.p,n.start,n.end); } }
+    const pct=n=>Math.max(0,Math.min(100,(NOW-n.start)/(n.end-n.start)*100));
+    const dNow=chain.map((n,i)=>({ level:LV[i][0], glyph:G[n.p], name:chain.slice(0,i+1).map(z=>SH[z.p]).join(' › '), remain:fdur(n.end-NOW)+' left',
+      val:chain.slice(0,i).map(z=>z.p).join('|'),
+      style:`display:flex;align-items:center;gap:11px;padding:10px 0 10px ${i*12}px;cursor:pointer;${i?'border-top:1px solid rgba(38,34,28,.07)':''}`,
+      dot:`width:28px;height:28px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;background:color-mix(in srgb,var(--acc,#B0722F) ${100-i*14}%,#9c958a)`,
+      bar:`display:block;height:100%;width:${pct(n).toFixed(1)}%;background:var(--acc,#B0722F)` }));
+    // browse path
+    const keys=(s.dPath||'').split('|').filter(Boolean).slice(0,4);
+    const nodes=[]; { let list=mahas; for(const k of keys){ const n=list.find(z=>z.p===k); if(!n) break; nodes.push(n); list=childrenOf(n); } }
+    const L=nodes.length, parent=nodes[L-1], kids=childrenOf(parent);
+    const crumbs=[{label:'All chapters',val:''}].concat(nodes.map((n,i)=>({label:SH[n.p],val:nodes.slice(0,i+1).map(z=>z.p).join('|')}))).map((c,i,a)=>({...c, sep:i?'›':'', style:`font-size:12px;font-weight:600;padding:5px 10px;border-radius:20px;cursor:pointer;${i===a.length-1?'background:var(--acc,#B0722F);color:#FFF8EE':'background:color-mix(in srgb,var(--acc,#B0722F) 10%,transparent);color:var(--acc-d,#8a5a22)'}`}));
+    const st=n=>n.end<=NOW?'past':n.start>NOW?'ahead':'now';
+    const spanA=L?parent.start:BIRTH, spanB=L?parent.end:kids[kids.length-1].end;
+    const drill=L<4;
+    const rows=kids.map(n=>{ const ss=st(n); const a0=(L===0&&n.start<BIRTH)?BIRTH:n.start; return {
+      glyph:G[n.p], name:SH[n.p], tag:ss==='now'?'Now':ss==='past'?'Past':'Ahead', isNow:ss==='now',
+      range:fd(a0,L)+' – '+fd(n.end,L)+((L===0&&n.start<BIRTH)?' · from birth':''), dur:fdur(n.end-a0), chev:drill?'›':'',
+      val:keys.slice(0,L).concat(n.p).join('|'), tap:drill?this.set:this.noop,
+      bgRole:ss==='now'?'':'surf', bdRole:ss==='now'?'':'hair',
+      style:`display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:15px;margin-bottom:8px;cursor:${drill?'pointer':'default'};border:1px solid ${ss==='now'?'var(--acc,#B0722F)':'rgba(38,34,28,.09)'};background:${ss==='now'?'color-mix(in srgb,var(--acc,#B0722F) 7%,transparent)':'#fff'};opacity:${ss==='past'?.6:1}`,
+      dot:`width:32px;height:32px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:15px;${ss==='now'?'background:var(--acc,#B0722F);color:#fff':'background:color-mix(in srgb,var(--acc,#B0722F) 11%,transparent);color:var(--acc,#B0722F)'}`,
+      tagStyle:`font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:${ss==='now'?'var(--acc,#B0722F)':ss==='past'?'#a59e90':'#5E8A6B'}`,
+      bar:`display:block;height:100%;width:${pct(n).toFixed(1)}%;background:var(--acc,#B0722F)` }; });
+    const strip=kids.map(n=>{ const ss=st(n); const a0=(L===0&&n.start<BIRTH)?BIRTH:n.start; return { glyph:(n.end-a0)/(spanB-spanA)>.06?G[n.p]:'',
+      style:`flex:${(n.end-a0).toFixed(0)};display:flex;align-items:center;justify-content:center;font-size:11px;min-width:0;overflow:hidden;${ss==='now'?'background:var(--acc,#B0722F);color:#fff':ss==='past'?'background:rgba(38,34,28,.16);color:rgba(38,34,28,.5)':'background:color-mix(in srgb,var(--acc,#B0722F) 14%,transparent);color:var(--acc,#B0722F)'}` }; });
+    const showMarker=NOW>=spanA&&NOW<spanB;
+    const dasha={ now:dNow, nowDate:'1 Oct 2026 · 9:41', crumbs, rows, strip, showMarker, markerLeft:((NOW-spanA)/(spanB-spanA)*100).toFixed(2)+'%',
+      levelTitle:LV[L][0], levelSub:L?LV[L][1]+' within '+nodes.map(z=>SH[z.p]).join(' › '):LV[0][1]+' · the Vimśottarī sequence of your life',
+      levelSpan:fd(spanA,Math.min(L,3))+' – '+fd(spanB,Math.min(L,3)), hint:drill?'Tap any period to open its '+LV[L+1][0]:'Prāṇadaśā is the finest level — hours to days' };
+
+    // ---- strength: Shadbala ----
+    const okC=k=>this.kindColor(k);
+    const kindOf=r=>r>=1.1?'good':r>=1?'neutral':'bad';
+    const SB={Su:[6.2,5,[1.3,0.9,1.4,0.6,1.0,0.3]],Mo:[5.1,6,[1.2,0.6,1.3,0.7,0.85,0.35]],Ma:[6.8,5,[1.4,1.1,1.0,1.1,0.43,0.6]],Me:[5.9,7,[1.1,0.9,1.2,0.8,0.86,0.3]],Ju:[7.9,6.5,[1.5,1.2,1.4,0.9,0.57,0.8]],Ve:[6.4,5.5,[1.3,0.7,1.2,0.9,0.71,0.5]],Sa:[4.1,5,[0.8,0.6,0.9,0.7,0.29,0.2]]};
+    const COMP=[['Sthāna','position'],['Dig','direction'],['Kāla','time'],['Ceṣṭā','motion'],['Naisargika','natural'],['Dṛk','aspects']];
+    const ADV={
+      Su:['Surya is comfortably strong — authority and visibility come easily.',[['Take the visible role','Present, lead, sign your name to things.'],['Morning sunlight','A few minutes facing sunrise keeps it steady.']]],
+      Mo:['Chandra is below its minimum — mind, sleep and emotional steadiness need tending.',[['Keep a rhythm','Regular sleep and meal times steady a weak Moon more than anything.'],['Mantra · Mondays','Oṃ Somāya Namaḥ, 108× in the evening.'],['Give','Rice, milk or white cloth on Mondays.'],['Water','Time near water — a walk, a swim, a long bath.']]],
+      Ma:['Mangala is your strongest graha — courage and drive are on tap.',[['Channel it physically','Daily exercise turns surplus heat into stamina.'],['Start hard things on Tuesdays','Use the day for tasks that need nerve.']]],
+      Me:['Budha is short of its minimum — and it rules your current Mahādaśā, so this matters most.',[['Decide in writing','Lists and notes compensate for scattered focus.'],['Mantra · Wednesdays','Budha Bīja mantra, 108× — already in your remedies.'],['Give','Green gram (moong) on Wednesdays.'],['Gemstone, with care','Emerald only after a full-chart review.']]],
+      Ju:['Guru is strong — wisdom and good counsel flow through you.',[['Teach & mentor','Sharing what you know multiplies Guru’s grace.'],['Thursdays','Favour study, advice and long-range plans.']]],
+      Ve:['Shukra is above its minimum — relationships and beauty return well.',[['Invest in partnership','Time given to people and craft compounds now.'],['Fridays','Good for social, creative and comfort plans.']]],
+      Sa:['Shani is your weakest graha — patience, discipline and structure need support.',[['Small, steady routines','Consistency over intensity; finish what you start.'],['Mantra · Saturdays','Oṃ Śaṃ Śanaiścarāya Namaḥ, 108×.'],['Serve','Help elders or workers; give black sesame or mustard oil.'],['Avoid shortcuts','No blue sapphire without an expert review.']]],
+    };
+    const ratioOf=k=>SB[k][0]/SB[k][1];
+    const planets=Object.keys(SB).sort((a,b)=>ratioOf(b)-ratioOf(a)).map(k=>{ const [tot,req,w]=SB[k]; const r=tot/req; const kd=kindOf(r); const c=okC(kd); const open=s.strPlanet===k;
+      const sum=w.reduce((x,y)=>x+y,0); const vs=w.map(x=>Math.round(x/sum*tot*60)); const mx=Math.max(...vs);
+      return { k, glyph:G[k], name:NAME[k], rupas:tot.toFixed(1)+' rūpas · needs '+req.toFixed(1), ratio:r.toFixed(2)+'×', status:kd==='good'?'Strong':kd==='neutral'?'Adequate':'Needs support', color:c, open, weak:kd==='bad',
+        bdRole:open?'':'hair',
+        style:`background:#fff;border-radius:17px;padding:14px 15px;margin-bottom:9px;border:1px solid ${open?'var(--acc,#B0722F)':'rgba(38,34,28,.08)'}`,
+        dot:`width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:16px;background:${this.kindTint(kd)};color:${c}`,
+        fill:`position:absolute;left:0;top:0;bottom:0;border-radius:4px;width:${Math.min(r/1.6,1)*100}%;background:${c}`,
+        comps:COMP.map((cc,i)=>({name:cc[0],gloss:cc[1],v:String(vs[i]),bar:`display:block;height:100%;width:${vs[i]/mx*100}%;background:var(--acc,#B0722F);opacity:.75`})),
+        head:ADV[k][0], advice:ADV[k][1].map(a=>({t:a[0],d:a[1]})) }; });
+
+    // ---- strength: Bhavabala ----
+    const HB=[8.2,6.1,7.4,5.6,7.9,6.8,5.2,4.9,8.6,9.1,8.0,5.8];
+    const LORD=['Ve','Ma','Ju','Sa','Sa','Ju','Ma','Ve','Me','Mo','Su','Me'];
+    const HADV=[
+      ['Your body and presence carry you — invest in health habits that compound.','A good house to act from: start things in your own name.'],
+      ['Speak slowly on money and family matters.','Keep a simple weekly savings ritual on Tuesdays (lord Mangala).','Offer red lentils on Tuesdays.'],
+      ['Effort pays off — short trips, writing and outreach are favoured.'],
+      ['Make home a place of rest — clear one corner this week.','Spend unhurried time with your mother or elders.','Shani mantra on Saturdays supports the 4th lord.'],
+      ['Creative and learning projects flow — begin one.','Good house for time with children and play.'],
+      ['Guard health with fixed sleep and meal times.','Settle small debts and disputes promptly.','Thursdays: offer turmeric or yellow lentils (lord Guru).'],
+      ['Read contracts twice; don’t rush commitments.','Listen before negotiating — partnerships need patience now.','Tuesdays: Hanumān Chālīsā or red-lentil charity for the 7th lord.'],
+      ['Keep a buffer for sudden expenses.','Avoid speculation and high-risk ventures.','Fridays: give rice or white sweets; Mahāmṛtyuñjaya mantra for steadiness.'],
+      ['Fortune favours study, travel and seeking a mentor.','Honour teachers and your father — it amplifies this house.'],
+      ['Career is your strongest house — ask for the role, pitch the idea.','Act during Abhijit Muhūrta for professional starts.'],
+      ['Networks bring gains — reconnect with old contacts.','Group efforts outperform solo ones now.'],
+      ['Guard your sleep; screens off an hour before bed.','Budget travel and giving so outflows feel chosen.','A quiet practice — meditation or a short retreat — restores this house.'],
+    ];
+    const hSel=Math.max(1,Math.min(12,+s.strHouse||7));
+    const hKind=v=>v>=8?'good':v>=7?'neutral':'bad';
+    const houses=HB.map((v,i)=>{ const n=i+1, sel=n===hSel, kd=hKind(v), c=okC(kd); return { n:String(n), val:String(n), v:v.toFixed(1), color:c, labelOp:sel?1:0,
+      bar:`width:100%;border-radius:5px 5px 2px 2px;height:${v/10*130-14}px;background:${c};opacity:${sel?1:.45};${sel?'box-shadow:0 0 0 2px var(--acc,#B0722F)':''}`,
+      numStyle:`flex:1;text-align:center;font-family:'Spline Sans Mono',monospace;font-size:10px;font-weight:${sel?700:400};color:${sel?'var(--acc,#B0722F)':'#a59e90'}` }; });
+    const hv=HB[hSel-1], hk=hKind(hv), lk=LORD[hSel-1];
+    const house={ n:String(hSel), karaka:KARAKA[hSel-1], sign:SIGN[hSel-1], meaning:MEAN[hSel-1], v:hv.toFixed(1), color:okC(hk), status:hk==='good'?'Strong':hk==='neutral'?'Adequate':'Needs support',
+      comps:[['Bhāvādhipati · lord',.56],['Dig · direction',.29],['Dṛṣṭi · aspects',.15]].map(c=>({name:c[0],v:(hv*c[1]).toFixed(1)})),
+      lordKey:lk, lord:G[lk]+' '+SH[lk], lordRatio:ratioOf(lk).toFixed(2)+'×', advice:HADV[hSel-1] };
+    const str={ isShad:scr==='shadbala', isBhava:scr==='bhavabala', shadSeg:this.seg(scr==='shadbala'), bhavaSeg:this.seg(scr==='bhavabala'), planets, houses, house };
+
+    const panchang=[ ['Tithi','lunar day','Shukla Dashamī','10th · waxing','good'],['Vāra','weekday','Shanivāra','Saturn · discipline','neutral'],['Nakshatra','lunar mansion','Anurādhā','ruled by Shani','good'],['Yoga','sun–moon union','Shukla','clarity & resolve','good'],['Karana','half lunar day','Taitila','steady effort','neutral'] ].map(p=>({label:p[0],gloss:p[1],value:p[2],detail:p[3],dot:this.kindColor(p[4])}));
+
+    const remList=[ ['rem_mantra','Mantra','Budha Bīja mantra','108× · every morning','ॐ'],['rem_fast','Fasting','Wednesday fast','weekly · Budha day','◐'],['rem_charity','Charity','Green gram (moong)','Wednesdays','❋'],['rem_gem','Gemstone','Emerald · Panna','wear · right little finger','◆'] ].map(r=>({field:r[0],type:r[1],title:r[2],cadence:r[3],glyph:r[4],on:s[r[0]],sw:this.sw(s[r[0]])}));
+    const DAYS=['M','T','W','T','F','S','S'];
+    const streakDots=[1,1,1,1,0,1,1].map((v,i)=>({on:!!v, bg:v?'rgba(255,255,255,.22)':'rgba(255,255,255,.09)', fg:v?'#FFF8EE':'rgba(255,248,238,.5)', day:DAYS[i]}));
+    const streakDots2=[1,1,1,1,0,1,1].map((v,i)=>({on:!!v, bg:v?'var(--acc,#B0722F)':'rgba(38,34,28,.06)', fg:v?'#FFF8EE':'#a59e90', day:DAYS[i]}));
+
+    const ratings=[['1','Heavy','☁'],['2','Low','◔'],['3','Even','◑'],['4','Good','◕'],['5','Bright','☀']].map(r=>({val:r[0],label:r[1],glyph:r[2],sel:s.journalRating===r[0], style:`flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 3px;border-radius:14px;cursor:pointer;border:1px solid ${s.journalRating===r[0]?'var(--acc,#B0722F)':'rgba(38,34,28,.12)'};background:${s.journalRating===r[0]?'color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 8%,transparent)':'#fff'}`, color:s.journalRating===r[0]?'var(--acc,#B0722F)':'#6e685d'}));
+    const trendBars=[3,4,2,5,4,3,5,4,2,4,5,3,4,5].map(v=>({barStyle:`flex:1;height:${v*17}px;border-radius:4px;background:${v>=4?'#5E8A6B':v===3?'#B08A3A':'#B05A44'}`}));
+
+    const profiles=[ ['AR','Ananya Rao','You','14 Aug 1994 · Bengaluru','var(--acc,#B0722F)',true],['SR','Sunita Rao','Mother','2 Feb 1966 · Mysuru','#5E8A6B',false],['KV','Karan Verma','Partner','30 Nov 1991 · Delhi','#7C6B9E',false],['MI','Meera','Daughter','9 Mar 2021 · Bengaluru','#B05A44',false] ].map(p=>({initials:p[0],name:p[1],rel:p[2],born:p[3],color:p[4],active:p[5], style:`display:flex;align-items:center;gap:13px;padding:13px;border-radius:16px;margin-bottom:9px;cursor:pointer;border:1px solid ${p[5]?'var(--acc,#B0722F)':'rgba(38,34,28,.09)'};background:${p[5]?'color-mix(in srgb,var(--acc,var(--acc,#B0722F)) 5%,transparent)':'#fff'}`, avatar:`width:42px;height:42px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;background:${p[4]}`}));
+
+    const pushes=[ ['15 min','Rahu Kāl soon','Hold new commitments until 10:44 AM.','#B05A44'],['8:00 AM','Today, in one line','A steady day for finishing, not starting.','var(--acc,#B0722F)'],['Mon','Transit hit','Mars enters your 10th — drive at work sharpens.','#5E8A6B'] ].map(p=>({time:p[0],title:p[1],body:p[2],accent:p[3]}));
+    const notifSettings=[ ['nt_dasha','Dasha & sub-period changes','When a Mahā or Antar period shifts'],['nt_transit','Transit hits','Major planets crossing your key houses'],['nt_rahu','Rahu Kāl reminder','15 minutes before, each day'],['nt_sade','Sade Sati entry & exit','Saturn’s 7½-year passage'],['nt_daily','Daily insight','Delivered at 8:00 AM'] ].map(n=>({field:n[0],title:n[1],sub:n[2],on:s[n[0]],sw:this.sw(s[n[0]])}));
+
+    const annual=s.billing==='annual';
+    const compare=[ ['Daily insight & full timeline',true],['Rahu Kāl & Choghadiya',true],['Panchāng almanac',true],['Decision assistant',false],['Full Dasha drill-down',false],['Navāmśa & D9 charts',false],['Remedies + streak tracking',false],['Transit & Sade Sati alerts',false] ].map(c=>({label:c[0],free:c[1],freeMark:c[1]?'✓':'—'}));
+
+    return {
+      set:this.set, toggle:this.toggle, locFocus:this.locFocus, locInput:this.locInput, locBlur:this.locBlur, locPick:this.locPick, pick:this.pick, goPlanet:this.goPlanet,
+      sel:{ theme:s.theme, screen:scr, accent:s.accent, base:s.base },
+      accents:[['amber','Dawn','#B0722F'],['indigo','Twilight','#4C5BA6'],['sage','Grove','#5E8A6B'],['clay','Terracotta','#B0654A'],['plum','Amethyst','#8A5A8F'],['slate','Ink','#566579']].map(a=>({ k:a[0], label:a[1], color:a[2],
+        dotStyle:`width:26px;height:26px;border-radius:50%;cursor:pointer;background:${a[2]};box-shadow:0 0 0 ${s.accent===a[0]?'2px #fff,0 0 0 4px '+a[2]:'1px rgba(0,0,0,.12)'}` })),
+      bases:[['paper','Paper','#F1ECE2'],['sand','Sand','#ECE3D3'],['mist','Mist','#EBEDF1'],['fog','Fog','#EAE7E1'],['blush','Blush','#F1E8E3']].map(b=>({ k:b[0], label:b[1], color:b[2],
+        dotStyle:`width:26px;height:26px;border-radius:50%;cursor:pointer;background:${b[2]};box-shadow:0 0 0 ${s.base===b[0]?'2px #fff,0 0 0 4px #9a9488':'1px rgba(0,0,0,.16)'}` })),
+      navP1, navP2, tabs,
+      onEmail:this.onEmail, onPw:this.onPw, submitLogin:this.submitLogin, submitSignup:this.submitSignup,
+      login:(()=>{ const si=true; const eErr=s.loginTried&&!/^\S+@\S+\.\S+$/.test(s.loginEmail); const pErr=s.loginTried&&s.loginPw.length<8;
+        const inp=err=>`width:100%;font:inherit;font-size:15px;outline:none;background:#fff;border:1px solid ${err?'#B05A44':'rgba(38,34,28,.12)'};border-radius:13px;padding:14px 15px;color:#26221C`;
+        return { isSignIn:si, title:si?'Welcome back':'Create your account', sub:si?'Sign in to return to your sky.':'One account keeps your charts and journal in sync across devices.',
+          email:s.loginEmail, pw:s.loginPw, emailErr:eErr, pwErr:pErr, emailStyle:inp(eErr), pwStyle:inp(pErr)+';padding-right:58px',
+          pwType:s.loginShowPw?'text':'password', pwToggle:s.loginShowPw?'Hide':'Show', pwPlaceholder:si?'Your password':'At least 8 characters',
+          btn:si?'Sign in':'Create account', otherMode:si?'signup':'signin', switchQ:si?'New to Antara?':'Already have an account?', switchBtn:si?'Create an account':'Sign in instead',
+          btnStyle:'background:var(--acc,#B0722F);color:#FFF8EE;text-align:center;padding:16px;border-radius:14px;font-size:15.5px;font-weight:600;margin-top:22px;cursor:pointer;box-shadow:0 8px 20px -8px color-mix(in srgb,var(--acc,#B0722F) 60%,transparent)' }; })(),
+      show:{ login:show('login'), onboarding:show('onboarding'), home:show('home'), timeline:show('timeline'), decision:show('decision'), chart:show('chart'), dasha:show('dasha'), strength:show('shadbala')||show('bhavabala'), panchang:show('panchang'), remedies:show('remedies'), remedyDetail:show('remedyDetail'), journal:show('journal'), journalTrends:show('journalTrends'), profiles:show('profiles'), notifications:show('notifications'), paywall:show('paywall') },
+      ui:{
+        isIos:ios,
+        platIos:this.segTop(ios), platAnd:this.segTop(!ios),
+        themeIcon:s.theme==='light'?'☾':'☀', themeNext:s.theme==='light'?'dark':'light',
+        accentLabel:{amber:'Dawn · burnished amber (default)',indigo:'Twilight · deep indigo',sage:'Grove · muted sage',clay:'Terracotta · warm clay',plum:'Amethyst · soft plum',slate:'Ink · cool slate'}[s.accent],
+        baseLabel:{paper:'Paper · warm off-white (default)',sand:'Sand · deeper warm neutral',mist:'Mist · cool grey',fog:'Fog · soft greige',blush:'Blush · faint warm rose'}[s.base]+' · light mode',
+        bezelR:ios?'52px':'40px', screenR:ios?'40px':'28px',
+        statusH:ios?'54px':'40px', clock:'9:41',
+        showTabs: scr!=='onboarding' && scr!=='paywall' && scr!=='login',
+        tabPad: ios?'22px':'12px', indH: ios?'26px':'20px',
+        indStyle: ios?'width:138px;height:5px;border-radius:5px;background:rgba(38,34,28,.28)':'width:110px;height:4px;border-radius:4px;background:rgba(38,34,28,.34)',
+      },
+      home:{
+        dateLine:'Saturday · 19 July', location:LOC[s.curSel].city+', '+LOC[s.curSel].region.split(', ')[0], greeting:'Good morning',
+        whyOpen:s.whyOpen, whyRot:s.whyOpen?'rotate(180deg)':'none', windows,
+      },
+      timeline,
+      da:{ activities:daActivities, ranges:daRanges, showResults:s.daPhase==='results', results:daResults,
+        resultCaption:`${actLabel} · next 7 days`.toUpperCase() },
+      ob:{
+        timeText:s.timeUnknown?'Unknown':'3:42 AM',
+        timeStyle:`background:#fff;border:1px solid rgba(38,34,28,.12);border-radius:13px;padding:14px 15px;font-size:15px;color:${s.timeUnknown?'#a59e90':'#26221C'}`,
+        checkStyle:`width:20px;height:20px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;border:1.5px solid ${s.timeUnknown?'var(--acc,#B0722F)':'rgba(38,34,28,.28)'};background:${s.timeUnknown?'var(--acc,#B0722F)':'transparent'};color:#fff`,
+        checkMark:s.timeUnknown?'✓':'', birth:locField('birth'), cur:locField('cur'),
+      },
+      chart:{ isNorth:s.chartStyle==='north', southIsShown:s.chartStyle!=='north', north:northHouses, south:southCells, legend:grahaLegend, sheet, title:chartTitle, sub:chartSub,
+        northSeg:this.seg(s.chartStyle==='north'), southSeg:this.seg(s.chartStyle!=='north'),
+        d1Seg:this.seg(s.chartVarga==='d1'), d9Seg:this.seg(s.chartVarga==='d9') },
+      dasha, str,
+      panchang,
+      remedies:{ list:remList, streakDots, streakDots2, streakCount:'12' },
+      journal:{ ratings, trendBars, rating:s.journalRating },
+      profiles,
+      notif:{ pushes, settings:notifSettings },
+      paywall:{ annual, price:annual?'₹2,499':'₹299', unit:annual?'/yr':'/mo', note:annual?'≈ ₹208 / month · save 30%':'billed monthly', compare,
+        monthSeg:this.billSeg(!annual), yearSeg:this.billSeg(annual) },
+    };
+  }
+
+  segTop(active){ return `flex:1;text-align:center;padding:9px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid ${active?'var(--acc,#B0722F)':'rgba(38,34,28,.14)'};background:${active?'var(--acc,#B0722F)':'#fff'};color:${active?'#FFF8EE':'#6e685d'}`; }
+  billSeg(active){ return `flex:1;text-align:center;padding:11px 8px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;color:${active?'#FFF8EE':'#6e685d'};background:${active?'var(--acc,#B0722F)':'transparent'}`; }
+  sw(on){ return { track:`width:42px;height:25px;border-radius:14px;flex:none;padding:2px;display:flex;align-items:center;cursor:pointer;background:${on?'var(--acc,#B0722F)':'rgba(38,34,28,.2)'};justify-content:${on?'flex-end':'flex-start'};transition:all .18s`, knob:'width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25)' }; }
+}
+</script>
+</body>
+</html>

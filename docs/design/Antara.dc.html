@@ -297,36 +297,96 @@
 
             <!-- dasha + transit row -->
             <div style="display:flex;gap:12px;margin-top:14px">
-              <div data-bg="surf" data-bd="hair" data-field="screen" data-val="dasha" onClick="{{ set }}" style="flex:1;background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;padding:15px;cursor:pointer">
-                <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90">Current period</div>
+              <div data-bg="surf" data-bd="hair" data-field="screen" data-val="dasha" onClick="{{ set }}" style="flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;padding:15px;cursor:pointer">
+                <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90">Current Dasha</div>
                 <div style="display:flex;align-items:center;gap:7px;margin-top:8px"><span style="width:20px;height:20px;border-radius:50%;background:#EAF0EA;display:flex;align-items:center;justify-content:center;font-size:11px;color:#5E8A6B">☿</span><span data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">Budha–Shukra</span></div>
                 <div data-fg="ink2" style="font-size:11px;color:#6e685d;margin-top:6px">Mercury–Venus · Dasha</div>
                 <div style="height:4px;border-radius:3px;background:#EDE7DC;margin-top:9px;overflow:hidden"><span style="display:block;height:100%;width:62%;background:var(--acc,#B0722F);border-radius:3px"></span></div>
                 <div data-fg="ink3" style="font-size:10px;color:#a59e90;margin-top:5px">1y 4m remaining</div>
+                <div style="height:11px;flex:none"></div>
+                <div data-bd="hair" style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:10px;border-top:1px solid rgba(38,34,28,.07)"><span data-fg="accent" style="font-size:11.5px;font-weight:600;color:var(--acc,#B0722F)">View details</span><span data-fg="accent" style="font-size:13px;color:var(--acc,#B0722F)">→</span></div>
               </div>
-              <div data-bg="surf" data-bd="hair" data-field="screen" data-val="chart" onClick="{{ set }}" style="flex:1;background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;padding:15px;cursor:pointer">
-                <div data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90">Live transit</div>
-                <div style="display:flex;align-items:center;gap:7px;margin-top:8px"><span style="width:20px;height:20px;border-radius:50%;background:#F3E3DC;display:flex;align-items:center;justify-content:center;font-size:11px;color:#B05A44">♂</span><span data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">Mars enters 10th</span></div>
-                <div data-fg="ink2" style="font-size:11px;color:#6e685d;margin-top:6px">Drive at work sharpens</div>
-                <div style="display:flex;align-items:center;gap:5px;margin-top:11px"><span style="width:7px;height:7px;border-radius:50%;background:#B05A44"></span><span data-fg="ink3" style="font-size:10px;color:#a59e90">Peaks around 3 PM</span></div>
+              <div data-bg="surf" data-bd="hair" data-field="screen" data-val="timeline" onClick="{{ set }}" style="flex:1;min-width:0;display:flex;flex-direction:column;background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:18px;padding:15px;cursor:pointer">
+                <div style="display:flex;align-items:center;justify-content:space-between"><span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#a59e90">Right now</span><span style="width:7px;height:7px;border-radius:50%;background:{{ nowWin.color }};animation:anbreath 2s ease-in-out infinite"></span></div>
+                <div style="display:flex;align-items:center;gap:7px;margin-top:8px"><span style="width:20px;height:20px;border-radius:50%;flex:none;background:{{ nowWin.tint }};display:flex;align-items:center;justify-content:center;font-size:10px;color:{{ nowWin.color }}">{{ nowWin.icon }}</span><span data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">{{ nowWin.name }}</span></div>
+                <div style="font-size:11px;font-weight:600;color:{{ nowWin.color }};margin-top:6px">Until {{ nowWin.end }}</div>
+                <div style="height:4px;border-radius:3px;background:rgba(38,34,28,.08);margin-top:9px;overflow:hidden"><span style="display:block;height:100%;width:{{ nowWin.pct }};background:{{ nowWin.color }};border-radius:3px"></span></div>
+                <div data-fg="ink3" style="font-size:10px;color:#a59e90;margin-top:5px">Next · {{ nowWin.next }}</div>
+                <div style="height:11px;flex:none"></div>
+                <div data-bd="hair" style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:10px;border-top:1px solid rgba(38,34,28,.07)"><span data-fg="accent" style="font-size:11.5px;font-weight:600;color:var(--acc,#B0722F)">View full timeline</span><span data-fg="accent" style="font-size:13px;color:var(--acc,#B0722F)">→</span></div>
               </div>
             </div>
 
-            <!-- today's timing summary -->
+            <!-- live planet transits -->
             <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 2px 11px">
-              <div data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">Today's windows</div>
-              <span data-fg="accent" data-field="screen" data-val="timeline" onClick="{{ set }}" style="font-size:12px;font-weight:600;color:var(--acc,#B0722F);cursor:pointer">Full timeline →</span>
-            </div>
-            <sc-for list="{{ home.windows }}" as="w" hint-placeholder-count="3">
-              <div style="{{ w.rowStyle }}">
-                <span style="{{ w.bar }}"></span>
-                <div style="flex:1">
-                  <div data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C">{{ w.name }} <span data-fg="ink3" style="font-weight:400;color:#a59e90;font-size:11.5px">{{ w.gloss }}</span></div>
-                  <div style="{{ w.tagStyle }}">{{ w.tag }}</div>
-                </div>
-                <span style="font-family:'Spline Sans Mono',monospace;font-size:12px;color:{{ w.timeColor }}">{{ w.time }}</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div data-fg="ink" style="font-size:15px;font-weight:600;color:#26221C">Planets right now</div>
+                <span style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#5E8A6B"><span style="width:6px;height:6px;border-radius:50%;background:#5E8A6B;animation:anbreath 2s ease-in-out infinite"></span>Live</span>
               </div>
-            </sc-for>
+              <span data-fg="ink3" style="font-family:'Spline Sans Mono',monospace;font-size:10px;color:#a59e90">{{ transit.stamp }}</span>
+            </div>
+            <div data-bg="surf" data-bd="hair" data-shadow style="background:#fff;border:1px solid rgba(38,34,28,.07);border-radius:20px;overflow:hidden;box-shadow:0 14px 34px -24px rgba(20,16,30,.2)">
+              <div data-bd="hair" style="display:flex;gap:6px;padding:11px 14px;border-bottom:1px solid rgba(38,34,28,.06);flex-wrap:wrap">
+                <sc-for list="{{ transit.filters }}" as="f" hint-placeholder-count="3">
+                  <span data-field="trFilter" data-val="{{ f.k }}" onClick="{{ set }}" style="{{ f.style }}">{{ f.label }}</span>
+                </sc-for>
+              </div>
+              <sc-for list="{{ transit.rows }}" as="p" hint-placeholder-count="9">
+                <div data-bd="hair" style="{{ p.wrapStyle }}">
+                <div data-field="trOpen" data-val="{{ p.key }}" onClick="{{ p.tap }}" style="{{ p.rowStyle }}">
+                  <span style="{{ p.dot }}">{{ p.glyph }}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                      <span data-fg="ink" style="font-size:14px;font-weight:600;color:#26221C">{{ p.name }}</span>
+                      <sc-if value="{{ p.retro }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:20px;background:rgba(176,138,58,.15);color:#8f6f2a">℞ Retro</span>
+                      </sc-if>
+                      <sc-if value="{{ p.combust }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:20px;background:rgba(176,90,68,.14);color:#9a4a36">☀ Combust</span>
+                      </sc-if>
+                      <sc-if value="{{ p.dignity }}" hint-placeholder-val="{{ false }}">
+                        <span style="{{ p.dignityStyle }}">{{ p.dignity }}</span>
+                      </sc-if>
+                    </div>
+                    <div data-fg="ink2" style="font-size:11.5px;color:#6e685d;margin-top:2px">{{ p.rashi }} <span data-fg="ink3" style="color:#a59e90">· {{ p.house }}</span></div>
+                  </div>
+                  <div style="text-align:right;flex:none">
+                    <div data-fg="ink" style="font-family:'Spline Sans Mono',monospace;font-size:13px;font-weight:600;color:#26221C">{{ p.deg }}</div>
+                    <div data-fg="ink3" style="font-size:10px;color:#a59e90;margin-top:1px">{{ p.nak }}</div>
+                  </div>
+                  <span data-fg="ink3" style="flex:none;width:12px;text-align:center;color:#a59e90;font-size:10px;transition:transform .2s;transform:{{ p.rot }}">{{ p.chev }}</span>
+                </div>
+                <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:0 14px 14px 58px;display:flex;flex-direction:column;gap:10px;animation:anexp .22s ease">
+                    <sc-for list="{{ p.guide }}" as="g" hint-placeholder-count="1">
+                      <div data-bg="surf2" style="background:rgba(38,34,28,.035);border-radius:13px;padding:12px 13px">
+                        <div style="display:flex;align-items:center;gap:7px"><span style="{{ g.pill }}">{{ g.cond }}</span></div>
+                        <div data-fg="ink2" style="font-size:12px;line-height:1.5;color:#5a544a;margin-top:7px">{{ g.note }}</div>
+                        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px">
+                          <div>
+                            <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#4b7458;margin-bottom:5px">✓ Do</div>
+                            <sc-for list="{{ g.do }}" as="x" hint-placeholder-count="2">
+                              <div data-fg="ink" style="font-size:11.5px;line-height:1.45;color:#26221C;padding:3px 0 3px 9px;border-left:2px solid rgba(94,138,107,.5);margin-bottom:5px">{{ x }}</div>
+                            </sc-for>
+                          </div>
+                          <div>
+                            <div style="font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#9a4a36;margin-bottom:5px">✕ Avoid</div>
+                            <sc-for list="{{ g.avoid }}" as="x" hint-placeholder-count="2">
+                              <div data-fg="ink" style="font-size:11.5px;line-height:1.45;color:#26221C;padding:3px 0 3px 9px;border-left:2px solid rgba(176,90,68,.5);margin-bottom:5px">{{ x }}</div>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ transit.empty }}" hint-placeholder-val="{{ false }}">
+                <div data-fg="ink3" style="padding:16px;text-align:center;font-size:12px;color:#a59e90">No planets match this filter today</div>
+              </sc-if>
+              <div data-bg="surf2" style="background:rgba(38,34,28,.03);padding:10px 14px;font-size:10.5px;color:#a59e90;line-height:1.45" data-fg="ink3">Sidereal · Lahiri ayanāṃśa · houses from your Libra lagna. Tap a tagged planet for what to do and avoid.</div>
+            </div>
           </div>
         </sc-if>
 
@@ -950,7 +1010,7 @@ class Component extends DCLogic {
     timeUnknown: false, whyOpen: true, birthSel: 'blr', curSel: 'pnq', locOpen: '', locQ: '',
     daActivity: 'travel', daRange: 'week', daPhase: 'input',
     chartStyle: 'north', chartVarga: 'd1', sheetHouse: '',
-    dPath: 'Me', strPlanet: 'Me', strHouse: '7', billing: 'annual', journalRating: '4',
+    dPath: 'Me', trOpen: 'Me', strPlanet: 'Me', strHouse: '7', billing: 'annual', journalRating: '4',
     rem_mantra: true, rem_fast: true, rem_charity: false, rem_gem: false,
     nt_dasha: true, nt_transit: true, nt_rahu: true, nt_sade: false, nt_daily: true,
   };
@@ -1275,6 +1335,42 @@ class Component extends DCLogic {
         dateLine:'Saturday · 19 July', location:LOC[s.curSel].city+', '+LOC[s.curSel].region.split(', ')[0], greeting:'Good morning',
         whyOpen:s.whyOpen, whyRot:s.whyOpen?'rotate(180deg)':'none', windows,
       },
+      nowWin:{ name:'Rahu Kaal', kind:'Avoid', end:'10:44 AM', pct:'35%', next:'Gulika Kaal 10:44', icon:'☊', color:this.kindColor('bad'), tint:this.kindTint('bad') },
+      transit:(()=>{
+        const RASHI=['Meṣa · Aries','Vṛṣabha · Taurus','Mithuna · Gemini','Karka · Cancer','Siṃha · Leo','Kanyā · Virgo','Tulā · Libra','Vṛścika · Scorpio','Dhanu · Sagittarius','Makara · Capricorn','Kumbha · Aquarius','Mīna · Pisces'];
+        const NAK=['Aśvinī','Bharaṇī','Kṛttikā','Rohiṇī','Mṛgaśirā','Ārdrā','Punarvasu','Puṣya','Āśleṣā','Maghā','P. Phalgunī','U. Phalgunī','Hasta','Citrā','Svātī','Viśākhā','Anurādhā','Jyeṣṭhā','Mūla','P. Āṣāḍhā','U. Āṣāḍhā','Śravaṇa','Dhaniṣṭhā','Śatabhiṣā','P. Bhādrapadā','U. Bhādrapadā','Revatī'];
+        const ORD=['th','st','nd','rd'];
+        // [key, label, sidereal longitude, retro, combust, dignity]
+        const P=[['Su','Surya · Sun',93.4,false,false,''],['Mo','Chandra · Moon',284.2,false,false,''],['Ma','Mangala · Mars',90.7,false,false,'Debilitated'],['Me','Budha · Mercury',97.9,true,true,''],['Ju','Guru · Jupiter',101.3,false,true,'Exalted'],['Ve','Shukra · Venus',139.6,false,false,''],['Sa','Shani · Saturn',350.2,false,false,''],['Ra','Rahu · North node',308.1,true,false,''],['Ke','Ketu · South node',128.1,true,false,'']];
+        const f=s.trFilter||'all';
+        const keep=p=>f==='all'||(f==='retro'&&p[3])||(f==='combust'&&p[4]);
+        const GD={
+          Me:[['retro','Budha moves backward through your 10th — thinking turns inward and details slip at work.',['Revisit drafts and unfinished work','Reconnect with old contacts','Back up files; re-read fine print'],['Signing new contracts','Buying phones or electronics','Launching campaigns or big announcements']],
+              ['combust','Within 5° of the Sun, Budha’s voice is drowned out by ego and haste.',['Write it down before you say it','Let others speak first in meetings'],['Arguing to win','Hasty emails or public statements']]],
+          Ju:[['exalted','Guru is exalted in Karka — wisdom, teachers and grace are unusually generous.',['Seek counsel or a mentor','Begin study or a long-range plan','Give to learning on Thursdays'],['Over-promising — exaltation tempts excess','Preaching instead of listening']],
+              ['combust','Close to the Sun, Guru’s blessings work quietly rather than visibly.',['Keep new plans private until secure','Honour elders and teachers'],['Weddings, initiations or major auspicious starts until it clears','Big financial bets on “sure things”']]],
+          Ma:[['debilitated','Mangala is weakest in Karka — drive can turn into irritability or sudden flare-ups.',['Steady exercise to burn off heat','Hanumān Chālīsā on Tuesdays','Cool down before replying'],['Confrontations and ultimatums','Rash driving or risky sport','Elective surgery if it can wait']]],
+          Ra:[['retro','Rahu always moves backward — this is its natural motion, not a warning.',['Explore networks, tech and new ideas','Use the urge for change constructively'],['Shortcuts and get-rich-quick offers','Obsessing over one outcome']]],
+          Ke:[['retro','Ketu always moves backward — its natural, inward-turning motion.',['Meditation and quiet practice','Let go of what has run its course'],['Forcing clarity on vague matters','Isolating from people who support you']]],
+        };
+        const CL={retro:['℞ Retrograde','rgba(176,138,58,.15)','#8f6f2a'],combust:['☀ Combust','rgba(176,90,68,.14)','#9a4a36'],exalted:['▲ Exalted','rgba(94,138,107,.14)','#4b7458'],debilitated:['▼ Debilitated','rgba(38,34,28,.08)','#6e685d']};
+        const op=s.trOpen;
+        const rows=P.filter(keep).map((p,i,a)=>{ const lon=p[2]; const si=Math.floor(lon/30); const d=lon%30; const dd=Math.floor(d); const mm=Math.round((d-dd)*60);
+          const h=((si-6+12)%12)+1; const ord=(h>3&&h<21)?'th':(ORD[h%10]||'th');
+          const nk=NAK[Math.floor(lon/(360/27))]; const pada=Math.floor((lon%(360/27))/(360/108))+1;
+          const flag=p[4]?'bad':p[3]?'neutral':'good';
+          const g=GD[p[0]]||[]; const has=g.length>0; const open=has&&op===p[0];
+          return { key:p[0], glyph:G[p[0]], name:p[1], deg:dd+'°'+String(mm).padStart(2,'0')+'′', rashi:RASHI[si], house:h+ord+' house', nak:nk+' · pada '+pada,
+            retro:p[3], combust:p[4], dignity:p[5], open, tap:has?this.pick:this.noop, chev:has?'▾':'', rot:open?'rotate(180deg)':'none',
+            guide:g.map(x=>({cond:CL[x[0]][0], note:x[1], do:x[2], avoid:x[3], pill:`font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:${CL[x[0]][1]};color:${CL[x[0]][2]}`})),
+            wrapStyle:`${i<a.length-1?'border-bottom:1px solid rgba(38,34,28,.06);':''}${open?'background:color-mix(in srgb,var(--acc,#B0722F) 4%,transparent)':''}`,
+            dignityStyle:`font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:20px;${p[5]==='Exalted'?'background:rgba(94,138,107,.14);color:#4b7458':'background:rgba(38,34,28,.07);color:#6e685d'}`,
+            rowStyle:`display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:${has?'pointer':'default'}`,
+            dot:`width:32px;height:32px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:15px;background:${this.kindTint(flag)};color:${this.kindColor(flag)}` }; });
+        const cnt=k=>P.filter(p=>k==='retro'?p[3]:p[4]).length;
+        const filters=[['all','All 9'],['retro','℞ Retrograde · '+cnt('retro')],['combust','☀ Combust · '+cnt('combust')]].map(x=>({k:x[0],label:x[1],style:`font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:20px;cursor:pointer;${f===x[0]?'background:var(--acc,#B0722F);color:#FFF8EE':'background:rgba(38,34,28,.05);color:#6e685d'}`}));
+        return { rows, filters, empty:rows.length===0, stamp:'Updated 9:41 AM' };
+      })(),
       timeline,
       da:{ activities:daActivities, ranges:daRanges, showResults:s.daPhase==='results', results:daResults,
         resultCaption:`${actLabel} · next 7 days`.toUpperCase() },

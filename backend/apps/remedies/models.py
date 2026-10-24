@@ -19,6 +19,11 @@ class UserRemedy(models.Model):
     reminder = models.BooleanField(default=True)
     # The goal that suggested this remedy ("" = dasha fallback or added by the user).
     goal = models.CharField(max_length=20, blank=True)
+    # Chart reasons this remedy is suggested for, whatever the goals: "lagna" (lagna lord), "moon",
+    # "mahadasha", "antardasha" (their lords). Kept up to date as the dasha moves on.
+    basis = models.JSONField(default=list, blank=True)
+    # Added by the user (POST), as opposed to suggested; suggestions can be retired automatically.
+    user_added = models.BooleanField(default=False)
     # User edits; blank / null means "use the catalogue text".
     title = models.CharField(max_length=120, blank=True)
     text = models.CharField(max_length=300, blank=True)

@@ -15,7 +15,7 @@ from .models import AlertPreference
 class PrefsSerializer(serializers.ModelSerializer):
     class Meta:
         model = AlertPreference
-        fields = ["dasha", "transit", "rahu", "sade_sati", "daily", "periods", "daily_time", "rahu_lead_minutes"]
+        fields = ["dasha", "transit", "rahu", "sade_sati", "daily", "periods", "periods_night", "remedies", "daily_time", "remedy_time", "rahu_lead_minutes"]
 
 
 class PrefsView(APIView):

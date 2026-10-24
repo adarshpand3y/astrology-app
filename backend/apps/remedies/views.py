@@ -41,6 +41,7 @@ def list_payload(request) -> dict:
     user = request.user
     profile = resolve_profile(request, required=False)
     services.seed_for(user, profile)
+    services.sync_chart(user, profile)
     remedies = services.active(user).prefetch_related("logs")
     focus = services.focus_planets(profile) if profile else []
     return {
@@ -89,7 +90,7 @@ class RemedyListView(APIView):
             added = services.add_for_planet(request.user, d["planet"], d.get("kinds") or ["mantra", "charity"])
         else:
             fields = {f: d[f] for f in UserRemedy.OVERRIDES if d.get(f) not in (None, "")}
-            added = [UserRemedy.objects.create(user=request.user, kind=UserRemedy.Kind.CUSTOM,
+            added = [UserRemedy.objects.create(user=request.user, kind=UserRemedy.Kind.CUSTOM, user_added=True,
                                                reminder=d.get("reminder", True), **fields)]
         today = local_today(request)
         lang = request_lang(request)

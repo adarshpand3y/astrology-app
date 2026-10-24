@@ -1,7 +1,7 @@
 """Daily companion features: signup + onboarding (profile, goals), home, timeline, panchang,
 decision assistant, strength report, remedies, journal, alerts and Pro gating."""
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from django.core import mail
@@ -85,6 +85,20 @@ def test_home(client, lang):
     assert r.status_code == 200, r.data
     d = r.data
     assert d["name"] == "Ananya" and d["location"]["city"] == "Pune"
+    sky = d["sky"]
+    assert [p["planet"] for p in sky["planets"]] == ["Su", "Mo", "Ma", "Me", "Ju", "Ve", "Sa", "Ra", "Ke"]
+    assert all(0 <= p["degree"] < 30 for p in sky["planets"])  # degree within the sign
+    by = {p["planet"]: p for p in sky["planets"]}
+    assert by["Ra"]["retrograde"] and by["Ke"]["retrograde"]  # the nodes always move backwards
+    for pl in sky["planets"]:  # one guide per condition the graha is in, each with do and avoid
+        active = {c for c in ("retrograde", "combust") if pl[c]} | ({pl["dignity"]} if pl["dignity"] else set())
+        assert {g["condition"] for g in pl["guide"]} == active
+        assert all(g["note"] and g["do"] and g["avoid"] and g["label"] for g in pl["guide"])
+        assert all("{house}" not in g["note"] for g in pl["guide"])
+    assert all(1 <= p["house"] <= 12 and 1 <= p["pada"] <= 4 and p["nakshatra"] and p["sign_sanskrit"]
+               for p in sky["planets"])
+    assert all(p["dignity"] in (None, "exalted", "debilitated") for p in sky["planets"])
+    assert sky["reference"] == {"basis": "lagna", "sign": sky["reference"]["sign"], "ayanamsa": "lahiri"}
     assert d["insight"]["text"] and d["insight"]["why"] and len(d["insight"]["chips"]) == 2
     assert 0 <= d["period"]["antardasha"]["progress"] <= 1
     assert d["transit"]["title"] and d["transit"]["kind"] in ("good", "bad")
@@ -159,12 +173,99 @@ def test_goals_seed_remedies(client):
     r = client.get("/api/v1/remedies/")
     assert [g["key"] for g in r.data["goals"]] == ["marriage", "career"]
     remedies = r.data["remedies"]
-    assert {x["goal"] for x in remedies} == {"marriage", "career"}
-    assert {x["goal_short"] for x in remedies} == {"Marriage", "Career"}
+    goal_remedies = [x for x in remedies if x["goal"]]
+    assert {x["goal"] for x in goal_remedies} == {"marriage", "career"}
+    assert {x["goal_short"] for x in goal_remedies} == {"Marriage", "Career"}
     assert "gem" not in {x["kind"] for x in remedies}
     keys = [(x["planet"], x["kind"]) for x in remedies]
     assert len(keys) == len(set(keys))
     assert any(x["goal"] == "marriage" and x["kind"] == "fast" for x in remedies)
+
+
+def test_chart_remedies(client):
+    """Lagna lord, Chandra, Mahadasha and Antardasha lords get a mantra whatever the goals."""
+    from apps.profiles.models import BirthProfile
+    from apps.remedies import services as rs
+    from apps.remedies.models import UserRemedy
+    from apps.vedic import services as vedic
+
+    remedies = client.get("/api/v1/remedies/").data["remedies"]
+    chart = [x for x in remedies if x["basis"]]
+    assert {b for x in chart for b in x["basis"]} == {"lagna", "moon", "mahadasha", "antardasha"}  # birth time known
+    assert all(x["kind"] == "mantra" for x in chart)
+    assert len({x["planet"] for x in chart}) == len(chart)  # one mantra per graha, reasons merged
+    moon = next(x for x in chart if x["planet"] == "Mo")
+    assert "moon" in moon["basis"] and moon["basis_label"]
+    pure = [x for x in chart if not x["goal"]]
+    assert pure and all(x["goal_short"] in ("Lagna", "Chandra", "Mahadasha", "Antardasha") for x in pure)
+
+    # Removed by the user: not added back for the same reason.
+    assert client.delete(f"/api/v1/remedies/{moon['id']}/").status_code == 204
+    remedies = client.get("/api/v1/remedies/").data["remedies"]
+    assert not any(x["planet"] == "Mo" and x["kind"] == "mantra" for x in remedies)
+
+    # The dasha moves on: the next Antardasha lord's mantra appears; a remedy kept only for the
+    # old Antardasha is retired (archived, so its history stays).
+    user = User.objects.get(email="ananya@example.com")
+    profile = BirthProfile.objects.get(owner=user)
+    md, ad = vedic._vimshottari(profile).current(timezone.now(), levels=2)[:2]
+    later = ad.end + timedelta(days=1)
+    nxt = vedic._vimshottari(profile).current(later, levels=2)[1].lord
+    before = {(r.planet, tuple(r.basis)) for r in rs.active(user) if r.basis}
+    rs.sync_chart(user, profile, at=later)
+    after = {r.planet: r.basis for r in rs.active(user) if r.basis}
+    assert "antardasha" in after[nxt]
+    old_only = [p for p, b in before if b == ("antardasha",) and p != nxt]
+    for p in old_only:
+        r = UserRemedy.objects.get(user=user, planet=p, kind="mantra")
+        assert r.archived_at is not None and r.basis == []
+
+
+def test_right_now_card(client):
+    """The Home "Right now" card: the period in force (a kaal over the choghadiya under it) and the next one."""
+    from zoneinfo import ZoneInfo
+
+    from apps.daily import services as ds
+    from apps.daily.context import DayContext
+    from apps.profiles.models import BirthProfile
+    from apps.vedic.engine.muhurta import compute_muhurtas, find
+
+    assert client.get("/api/v1/daily/home/").data["now"]["name"]
+    user = User.objects.get(email="ananya@example.com")
+    place = user.current_place
+    tz = ZoneInfo(place.timezone)
+    day = date(2026, 10, 24)
+
+    def ctx_at(now):
+        return DayContext(user=user, profile=BirthProfile.objects.get(owner=user), lang="en", tz_name=place.timezone,
+                          lat=place.latitude, lon=place.longitude, place_label="Pune", place_city="Pune",
+                          place_region="", day=now.astimezone(tz).date(), now=now)
+
+    mu = compute_muhurtas(day, place.latitude, place.longitude, tz)
+    rk = find(mu, "rahu_kaal")
+    card = ds.right_now(ctx_at(rk.start + timedelta(minutes=5)))
+    assert card["key"] == "rahu_kaal" and card["kind"] == "bad" and card["glyph"] == "☊"
+    assert 0 < card["progress"] < 0.2 and card["end"] == rk.end and card["next"]["start"] >= rk.end
+
+    night = ds.right_now(ctx_at(datetime(2026, 10, 25, 2, 0, tzinfo=tz)))  # before sunrise: yesterday's night
+    assert night["key"].startswith("choghadiya.")
+
+    abhijit = find(mu, "abhijit")
+    before = ds.right_now(ctx_at(abhijit.start - timedelta(minutes=10)))
+    if before["key"].startswith("choghadiya."):  # a kaal may cover it instead, then Abhijit isn't next
+        assert before["next"]["name"].startswith("Abhijit") and before["next"]["start"] == abhijit.start
+
+
+def test_alert_feed_updates_chart_remedies(client):
+    """Opening the app fetches the alert feed; that alone brings chart remedies up to date."""
+    from apps.remedies.models import UserRemedy
+
+    user = User.objects.get(email="ananya@example.com")
+    UserRemedy.objects.filter(user=user).exclude(basis=[]).delete()  # as if never synced
+    items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
+    reasons = {b for r in UserRemedy.objects.filter(user=user, archived_at__isnull=True) for b in r.basis}
+    assert reasons == {"lagna", "moon", "mahadasha", "antardasha"}
+    assert any("Chandra beej mantra" in i["body"] for i in items if i["category"] == "remedy")
 
 
 def test_free_plan_has_one_goal(client):
@@ -303,16 +404,42 @@ def test_alerts(client):
     assert client.patch("/api/v1/alerts/prefs/", {"rahu": False}, format="json").data["rahu"] is False
     items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
     assert items and all(i["category"] != "rahu" for i in items)
-    assert {i["category"] for i in items} <= {"daily", "dasha", "period"}
+    assert {i["category"] for i in items} <= {"daily", "dasha", "period", "period_night", "remedy"}
+
+    reminders = [i for i in items if i["category"] == "remedy"]
+    assert reminders and reminders[0]["title"].startswith("🪔 Today's remedies · ")
+    assert "mantra" in reminders[0]["body"].lower()
+    assert all(i["at"][11:16] == "07:00" for i in reminders)  # default time, no lead
+    assert len({i["at"][:10] for i in reminders}) == len(reminders)  # at most one a day
 
     periods = [i for i in items if i["category"] == "period"]
-    assert periods and periods[0]["title"].startswith("Now: ") and "Choghadiya" in periods[0]["title"]
-    assert periods[0]["body"].startswith("Until ")
+    first = periods[0]
+    marks = {"good": "🟢 ", "neutral": "🟡 ", "bad": "⚠️ "}
+    assert all(i["title"].startswith(marks[i["kind"]]) for i in periods)  # good / neutral / bad at a glance
+    # The phone fills {start}/{end} in its own timezone and clock format.
+    assert first["title"].endswith(" period, {start}–{end}")
+    assert first["body"].startswith(("Suitable for", "Avoid"))
+    assert set(first["times"]) == {"start", "end"} and first["times"]["start"] == first["event_at"]
+    event, shown = datetime.fromisoformat(first["event_at"]), datetime.fromisoformat(first["at"])
+    assert event - shown == timedelta(minutes=15)  # shown ahead, so a late delivery still precedes it
+    advice = {i["body"].split()[0] for i in periods}
+    assert {"good": "Suitable", "bad": "Avoid"}.get(first["kind"], first["body"].split()[0]) == first["body"].split()[0]
+    assert advice <= {"Suitable", "Avoid"}
+    assert all(datetime.fromisoformat(i["event_at"]) == datetime.fromisoformat(i["at"]) for i in items
+               if i["category"] == "daily")  # the chosen delivery time, not an event
     assert len({i["at"][:10] for i in periods}) <= 3  # only the next few days, to stay under the phone's cap
     assert all(p["kind"] in ("good", "neutral", "bad") for p in periods)
+    nights = [i for i in items if i["category"] == "period_night"]
+    assert nights and nights[0]["title"].endswith("{start}–{end}")
     assert client.patch("/api/v1/alerts/prefs/", {"periods": False}, format="json").data["periods"] is False
     items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
-    assert all(i["category"] != "period" for i in items)
+    assert all(i["category"] != "period" for i in items) and any(i["category"] == "period_night" for i in items)
+    client.patch("/api/v1/alerts/prefs/", {"periods_night": False}, format="json")
+    items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
+    assert all(i["category"] not in ("period", "period_night") for i in items)
+    assert client.patch("/api/v1/alerts/prefs/", {"remedies": False}, format="json").data["remedies"] is False
+    items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
+    assert all(i["category"] != "remedy" for i in items)
 
 
 def test_place_search_is_public_for_signup(places):

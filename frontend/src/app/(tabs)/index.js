@@ -4,14 +4,43 @@ import { Animated, Pressable, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { LocationPicker } from '../../components/LocationPicker';
+import { SkyNow } from '../../components/SkyNow';
 import {
   Avatar, Bar, Button, Card, Empty, ErrorView, GradientBadge, Loading, Pill, Row, Screen, Sheet, SoftPanel, T, WindowRow,
 } from '../../components/ui';
 import { useAccount, useHome } from '../../hooks/data';
 import { useI18n } from '../../i18n';
+import { GLYPH } from '../../i18n/terms';
 import { useAuth } from '../../state/AuthContext';
 import { useTheme } from '../../theme';
 import { clock, dateLine, duration, initials, range } from '../../utils/format';
+
+/** Small graha glyph in a tinted circle, as on the Home summary cards. */
+function CardGlyph({ glyph, tone }) {
+  const th = useTheme();
+  const k = th.kind[tone] || th.kind.neutral;
+  return (
+    <View style={{ width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: k.tint }}>
+      <Text style={{ fontSize: 11, color: k.solid }}>{glyph}</Text>
+    </View>
+  );
+}
+
+/** "View details  →" pinned to the bottom of a Home summary card. */
+function CardFooter({ label }) {
+  const th = useTheme();
+  return (
+    <>
+      <View style={{ height: 11 }} />
+      <Row style={{
+        justifyContent: 'space-between', marginTop: 'auto', paddingTop: 10, borderTopWidth: 1, borderTopColor: th.c.hair,
+      }}>
+        <T weight={600} style={{ fontSize: 11.5, color: th.c.accent }}>{label}</T>
+        <Text style={{ fontSize: 13, color: th.c.accent }}>→</Text>
+      </Row>
+    </>
+  );
+}
 
 export default function Home() {
   const { profileId } = useAccount();
@@ -42,8 +71,8 @@ function HomeContent() {
 
   const md = data.period.mahadasha;
   const ad = data.period.antardasha;
-  const tr8 = data.transit;
-  const kind = th.kind[tr8.kind];
+  const now = data.now;
+  const nowKind = th.kind[now?.kind || 'neutral'];
 
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
@@ -97,33 +126,48 @@ function HomeContent() {
         ) : null}
       </Card>
 
-      {/* period + transit */}
+      {/* current dasha + the period in force right now */}
       <Row gap={12} align="stretch" style={{ marginTop: 14 }}>
         <Card radius={18} pad={15} style={{ flex: 1 }} onPress={() => router.push('/chart/dasha')}>
-          <T v="eyebrow" style={{ fontSize: 9 }}>{t('home.currentPeriod')}</T>
-          <T weight={600} numberOfLines={1} style={{ fontSize: 15, marginTop: 8 }}>{tr('graha', md.lord)}–{tr('graha', ad.lord)}</T>
-          <T v="tiny" style={{ color: th.c.ink2, marginTop: 6 }}>
+          <T v="eyebrow" style={{ fontSize: 9 }}>{t('home.currentDasha')}</T>
+          <Row gap={7} style={{ marginTop: 8 }}>
+            <CardGlyph glyph={GLYPH[md.lord]} tone="good" />
+            <T weight={600} numberOfLines={1} style={{ fontSize: 15, flexShrink: 1 }}>{tr('graha', md.lord)}–{tr('graha', ad.lord)}</T>
+          </Row>
+          <T v="tiny" style={{ fontSize: 11, color: th.c.ink2, marginTop: 6 }}>
             {lang === 'hi' ? t('home.dashaSub', { a: tr('graha', md.lord), b: tr('graha', ad.lord) })
               : t('home.dashaSub', { a: tr('planet', md.lord), b: tr('planet', ad.lord) })}
           </T>
           <Bar value={ad.progress} style={{ marginTop: 9 }} />
           <T v="tiny" style={{ fontSize: 10, marginTop: 5 }}>{t('home.remaining', { d: duration(ad.remaining_seconds * 1000, lang) })}</T>
+          <CardFooter label={t('home.viewDetails')} />
         </Card>
-        <Card radius={18} pad={15} style={{ flex: 1 }} onPress={() => router.push('/chart')}>
-          <T v="eyebrow" style={{ fontSize: 9 }}>{t('home.liveTransit')}</T>
-          <Row gap={7} style={{ marginTop: 8 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: kind.solid }} />
-            <T weight={600} numberOfLines={2} style={{ fontSize: 15, flexShrink: 1 }}>{tr8.title}</T>
-          </Row>
-          <T v="tiny" style={{ color: th.c.ink2, marginTop: 6 }}>{tr8.gloss}</T>
-          {tr8.peak ? (
-            <Row gap={5} style={{ marginTop: 11 }}>
-              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: kind.solid }} />
-              <T v="tiny" style={{ fontSize: 10 }}>{t('home.peaks', { time: clock(tr8.peak, lang, true) })}</T>
+        {now ? (
+          <Card radius={18} pad={15} style={{ flex: 1 }} onPress={() => router.push('/timeline')}>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <T v="eyebrow" style={{ fontSize: 9 }}>{t('home.rightNow')}</T>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: nowKind.solid }} />
             </Row>
-          ) : null}
-        </Card>
+            <Row gap={7} style={{ marginTop: 8 }}>
+              <CardGlyph glyph={now.glyph} tone={now.kind} />
+              <T weight={600} numberOfLines={1} style={{ fontSize: 15, flexShrink: 1 }}>{now.name}</T>
+            </Row>
+            <T weight={600} style={{ fontSize: 11, color: nowKind.solid, marginTop: 6 }}>
+              {t('home.until', { t: clock(now.end, lang, true) })}
+            </T>
+            <Bar value={now.progress} color={nowKind.solid} style={{ marginTop: 9 }} />
+            {now.next ? (
+              <T v="tiny" numberOfLines={1} style={{ fontSize: 10, marginTop: 5 }}>
+                {t('home.nextPeriod', { name: now.next.name, t: clock(now.next.start, lang) })}
+              </T>
+            ) : null}
+            <CardFooter label={t('home.viewTimeline')} />
+          </Card>
+        ) : null}
       </Row>
+
+      {/* every graha now, with retrograde / combust advice */}
+      <SkyNow sky={data.sky} />
 
       {/* today's windows */}
       <Row style={{ justifyContent: 'space-between', marginTop: 22, marginBottom: 11, marginHorizontal: 2 }}>

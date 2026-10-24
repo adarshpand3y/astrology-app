@@ -94,3 +94,22 @@ def remedy(planet: str, kind: str, lang: str) -> dict:
                 if hi else "Gemstones amplify a graha's effects, good and bad. Wear one only after a full-chart review by an expert."),
         "target": 1, "weekday": None,
     }
+
+
+# Why a remedy is on the list regardless of goals: reason -> (badge en, badge hi, detail en, detail hi).
+BASIS = {
+    "lagna": ("Lagna", "लग्न", "For your lagna lord", "आपके लग्न स्वामी के लिए"),
+    "moon": ("Chandra", "चंद्र", "For your Moon (Chandra)", "आपके चंद्रमा के लिए"),
+    "mahadasha": ("Mahadasha", "महादशा", "For your Mahadasha lord", "आपकी महादशा के स्वामी के लिए"),
+    "antardasha": ("Antardasha", "अंतर्दशा", "For your Antardasha lord", "आपकी अंतर्दशा के स्वामी के लिए"),
+}
+
+
+def basis_short(reasons: list[str], lang: str) -> str:
+    """Badge for a chart remedy: the first reason, e.g. "Mahadasha"."""
+    return BASIS[reasons[0]][1 if lang == "hi" else 0] if reasons and reasons[0] in BASIS else ""
+
+
+def basis_label(reasons: list[str], lang: str) -> str:
+    """All reasons, e.g. "For your Mahadasha lord · For your lagna lord"."""
+    return " · ".join(BASIS[r][3 if lang == "hi" else 2] for r in reasons if r in BASIS)

@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- User-granted on Android 14+ ("Alarms & reminders"); granted at install on 12-13. -->
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+</manifest>

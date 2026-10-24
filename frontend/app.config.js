@@ -23,12 +23,15 @@ module.exports = () => ({
     },
     android: {
       package: brand.androidPackage,
-      // Lets alerts fire on the minute (period changes, Rahu Kaal). Granted at install up to
-      // Android 13; on 14+ the user enables "Alarms & reminders" for the app, otherwise Android
-      // delivers them a few minutes late.
+      // Must increase with every build installed over an older one; some phones (OnePlus, Oppo,
+      // Realme…) only refresh the cached app icon when it does. scripts/build-lan-apk.ps1 sets it.
+      versionCode: Number(process.env.ANDROID_VERSION_CODE) || 1,
+      // On-time alerts: user-granted on Android 14+ ("Alarms & reminders"), granted at install on
+      // 12-13. Declared by modules/exact-alarms too; listed here so it's visible. The app asks for
+      // it once and the Alerts screen offers it while it's off.
       permissions: ['android.permission.SCHEDULE_EXACT_ALARM'],
       adaptiveIcon: {
-        backgroundColor: lightBg,
+        backgroundColor: brand.assets.adaptiveBackgroundColor || lightBg,
         foregroundImage: brand.assets.adaptiveForeground,
         backgroundImage: brand.assets.adaptiveBackground,
         monochromeImage: brand.assets.adaptiveMonochrome,
@@ -41,7 +44,7 @@ module.exports = () => ({
       'expo-secure-store',
       'expo-localization',
       'expo-font',
-      ['expo-notifications', { color: brand.theme.accents[brand.theme.accent][0] }],
+      ['expo-notifications', { icon: brand.assets.notificationIcon, color: brand.theme.accents[brand.theme.accent][0] }],
       ['expo-build-properties', { android: { usesCleartextTraffic: HTTP_API } }],
       [
         'expo-splash-screen',

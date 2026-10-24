@@ -5,10 +5,12 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { setApiLanguage } from '../api/client';
+import { useI18n } from '../i18n';
+import { setupNotifications, syncSchedule } from '../notifications';
 import { AuthProvider, useAuth } from '../state/AuthContext';
 import { PrefsProvider, usePrefs } from '../state/PrefsContext';
 import { useTheme } from '../theme';
@@ -30,6 +32,7 @@ export default function RootLayout() {
 function RootNavigator() {
   const { status, user } = useAuth();
   const { ready, lang } = usePrefs();
+  const { t } = useI18n();
   const theme = useTheme();
   const [fontsLoaded, fontError] = useFonts({
     Newsreader_400Regular, Newsreader_500Medium, Newsreader_600SemiBold,
@@ -42,6 +45,19 @@ function RootNavigator() {
   useEffect(() => {
     if (!booting) SplashScreen.hideAsync().catch(() => {});
   }, [booting]);
+
+  // Ask for notification permission as soon as the app opens (before sign-in), then offer
+  // on-time ("Alarms & reminders") delivery once. Signed-in users get their alerts scheduled
+  // straight away; others when they reach the tabs after signing in.
+  const asked = useRef(false);
+  useEffect(() => {
+    if (booting || asked.current) return;
+    asked.current = true;
+    setupNotifications({
+      title: t('alerts.exactTitle'), message: t('alerts.exactPrompt'),
+      later: t('alerts.exactLater'), allow: t('alerts.exactAllow'),
+    }).then((ok) => { if (ok && status === 'signedIn') syncSchedule(); });
+  }, [booting, status, t]);
 
   if (booting) return null;
   const signedIn = status === 'signedIn';

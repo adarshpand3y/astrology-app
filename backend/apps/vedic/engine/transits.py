@@ -182,3 +182,43 @@ def headline_transit(report: list[dict], dt: datetime, ayanamsa_name: str = "lah
         if score > best_score:
             best, best_score = {**r, "entered_at": entered, "days_since": age}, score
     return best
+
+
+# --- Retrograde & combust right now ---------------------------------------------------
+_LOOKAHEAD_DAYS = 240  # longer than any retrograde (Saturn ~140 days) or combustion spell
+_STEP_DAYS = 0.25
+
+
+def sky_now(dt: datetime, ayanamsa_name: str = "lahiri") -> list[dict]:
+    """Every graha's sign now, whether it is retrograde or combust, and when that ends.
+
+    Rahu and Ketu always move backwards, so they are never reported as retrograde here.
+    Combustion uses the BPHS orbs (tighter for a retrograde Mercury or Venus). End times come
+    from a 6-hour grid, which is plenty for showing a date."""
+    from .attributes import is_combust  # local import: attributes imports from the engine too
+
+    jd = _jd(dt)
+    grid = jd + np.arange(0, _LOOKAHEAD_DAYS + _STEP_DAYS, _STEP_DAYS)
+    sun = _lons(SU, grid, ayanamsa_name)
+    out = []
+    for code in (SU, MO, MA, ME, JU, VE, SA, RA, KE):
+        lons = _lons(code, grid, ayanamsa_name)
+        speed = ((np.roll(lons, -1) - lons + 180) % 360) - 180  # degrees per step, forward difference
+        speed[-1] = speed[-2]
+        nodes = code in (RA, KE)
+        retro = (speed < 0) & (not nodes)
+        combust = np.array([code not in (SU, RA, KE) and is_combust(code, l, s, bool(r))
+                            for l, s, r in zip(lons, sun, retro)])
+
+        def until(flags):
+            if not flags[0]:
+                return None
+            ends = np.nonzero(~flags)[0]
+            return _dt(float(grid[ends[0]])) if len(ends) else None
+
+        out.append({
+            "planet": code, "lon": float(lons[0]), "sign": int(lons[0] // 30),
+            "retrograde": bool(retro[0]), "retrograde_until": until(retro),
+            "combust": bool(combust[0]), "combust_until": until(combust),
+        })
+    return out

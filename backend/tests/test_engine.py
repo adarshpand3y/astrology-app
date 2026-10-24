@@ -214,3 +214,35 @@ def test_true_node_option():
     mean = ChartContext(INDIA)
     diff = abs(ctx.snap.bodies["Ra"].lon - mean.snap.bodies["Ra"].lon)
     assert 0 < diff < 2.0
+
+
+def test_sky_now_retrograde_and_combust():
+    from apps.vedic.engine.transits import sky_now
+
+    utc = timezone.utc
+    # 1 Mar 2026: Mercury retrograde (25 Feb - 20 Mar) and Jupiter retrograde (until ~11 Mar).
+    march = {p["planet"]: p for p in sky_now(datetime(2026, 3, 1, 12, tzinfo=utc))}
+    assert march["Me"]["retrograde"] and march["Ju"]["retrograde"]
+    assert datetime(2026, 3, 15, tzinfo=utc) < march["Me"]["retrograde_until"] < datetime(2026, 3, 25, tzinfo=utc)
+    assert march["Su"]["retrograde"] is False and march["Su"]["combust"] is False
+    # 26 Oct 2026: Venus retrograde near its inferior conjunction, so also combust.
+    october = {p["planet"]: p for p in sky_now(datetime(2026, 10, 26, 12, tzinfo=utc))}
+    assert october["Ve"]["retrograde"] and october["Ve"]["combust"]
+    assert october["Ve"]["combust_until"] < october["Ve"]["retrograde_until"]
+    # Rahu and Ketu always move backwards: never flagged.
+    assert not any(october[k]["retrograde"] or october[k]["combust"] for k in ("Ra", "Ke"))
+
+
+def test_sky_guides_cover_every_condition():
+    """Every graha has do / avoid guidance for each condition it can be in, in both languages."""
+    from apps.vedic.content.sky import guide
+
+    can = {"retrograde": "Ma Me Ju Ve Sa Ra Ke", "combust": "Mo Ma Me Ju Ve Sa",
+           "exalted": "Su Mo Ma Me Ju Ve Sa Ra Ke", "debilitated": "Su Mo Ma Me Ju Ve Sa Ra Ke"}
+    for cond, planets in can.items():
+        for planet in planets.split():
+            for lang in ("en", "hi"):
+                g = guide(planet, cond, 10, lang)
+                assert g and g["note"] and len(g["do"]) >= 2 and len(g["avoid"]) >= 2, (planet, cond, lang)
+    assert guide("Su", "retrograde", 1, "en") is None  # the Sun never retrogrades
+    assert "10th" in guide("Me", "retrograde", 10, "en")["note"]

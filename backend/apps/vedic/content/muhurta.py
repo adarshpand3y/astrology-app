@@ -39,3 +39,31 @@ def period_text(key: str, lang: str) -> dict:
     v = _PERIODS[key]
     o = 3 if lang == "hi" else 0
     return {"name": v[o], "short": v[o + 1], "gloss": v[o + 2]}
+
+
+# Notification wording for a period: key -> (en name, en advice, hi name, hi advice).
+# Advice opens with "Suitable for" or "Avoid" so the tone is clear from the shade.
+_ALERTS = {
+    "choghadiya.amrit": ("Amrit period", "Suitable for important beginnings: sign, commit, launch.",
+                         "अमृत चौघड़िया", "महत्वपूर्ण शुरुआत के लिए उत्तम: हस्ताक्षर, संकल्प, आरंभ।"),
+    "choghadiya.shubh": ("Shubh period", "Suitable for ceremonies, learning and auspicious work.",
+                         "शुभ चौघड़िया", "अनुष्ठान, अध्ययन और शुभ कार्यों के लिए उपयुक्त।"),
+    "choghadiya.labh": ("Labh period", "Suitable for business, trade and money matters.",
+                        "लाभ चौघड़िया", "व्यापार, लेन-देन और धन से जुड़े कामों के लिए उपयुक्त।"),
+    "choghadiya.char": ("Char period", "Suitable for travel, errands and anything on the move.",
+                        "चर चौघड़िया", "यात्रा, भाग-दौड़ और चलते-फिरते कामों के लिए उपयुक्त।"),
+    "choghadiya.udveg": ("Udveg period", "Avoid big decisions and confrontations; keep to routine work.",
+                         "उद्वेग चौघड़िया", "बड़े निर्णय और विवाद टालें; नियमित काम करें।"),
+    "choghadiya.kaal": ("Kaal period", "Avoid new starts and big purchases; finish pending work instead.",
+                        "काल चौघड़िया", "नई शुरुआत और बड़ी खरीदारी टालें; अधूरे काम पूरे करें।"),
+    "choghadiya.rog": ("Rog period", "Avoid medical procedures, disputes and sensitive conversations.",
+                       "रोग चौघड़िया", "चिकित्सा प्रक्रियाएँ, विवाद और संवेदनशील बातचीत टालें।"),
+    "rahu_kaal": ("Rahu Kaal", "Avoid new ventures, setting out on journeys and big commitments.",
+                  "राहु काल", "नए उद्यम, यात्रा की शुरुआत और बड़े संकल्प टालें।"),
+}
+
+
+def alert_text(key: str, lang: str) -> dict:
+    v = _ALERTS[key]
+    o = 2 if lang == "hi" else 0
+    return {"name": v[o], "advice": v[o + 1]}

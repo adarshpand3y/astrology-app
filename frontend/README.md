@@ -37,7 +37,7 @@ Everything lives in **`brand.config.js`**:
 | Section | What it controls |
 |---|---|
 | Identity | `name`, `slug`, `scheme`, `iosBundleIdentifier`, `androidPackage`, `version`, tagline, orb glyph |
-| `assets` | icon, splash, adaptive icon, favicon |
+| `assets` | icon, splash, adaptive icon (+ background colour), notification icon, favicon; sources in `../docs/icons` |
 | `apiUrl` / `devApiPort` | production backend URL, dev port |
 | `theme.accent` | one of the design's accents: `dawn`, `twilight`, `grove`, `terracotta`, `amethyst`, `ink` (add your own in `theme.accents`) |
 | `theme.base` | light background: `paper`, `sand`, `mist`, `fog`, `blush` |

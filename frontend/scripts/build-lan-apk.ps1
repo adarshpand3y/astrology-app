@@ -137,6 +137,11 @@ foreach ($ninja in Get-ChildItem (Join-Path $env:ANDROID_HOME 'cmake\*\bin\ninja
 # --- 4. Build --------------------------------------------------------------------------
 $previousUrl = $env:EXPO_PUBLIC_API_URL
 $env:EXPO_PUBLIC_API_URL = $apiUrl
+# A new, increasing version code for each build (minutes since 2024-01-01), so a phone treats
+# the install as an update and refreshes cached app data such as the launcher icon. It is
+# written into the native project by prebuild, so -SkipPrebuild keeps the previous one.
+$previousCode = $env:ANDROID_VERSION_CODE
+$env:ANDROID_VERSION_CODE = [string][int](((Get-Date).ToUniversalTime() - [datetime]'2024-01-01').TotalMinutes)
 Push-Location $frontend
 try {
     if (-not $SkipPrebuild -or -not (Test-Path 'android')) {
@@ -176,6 +181,7 @@ try {
     Step 'Done'
     Write-Host "    APK: $out" -ForegroundColor Green
     Write-Host "    Talks to: $apiUrl"
+    if (-not $SkipPrebuild) { Write-Host "    Version code: $env:ANDROID_VERSION_CODE" }
 
     if ($Install) {
         Step 'Installing on the connected phone (adb)'
@@ -190,4 +196,5 @@ try {
 } finally {
     Pop-Location
     $env:EXPO_PUBLIC_API_URL = $previousUrl
+    $env:ANDROID_VERSION_CODE = $previousCode
 }

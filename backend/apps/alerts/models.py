@@ -15,6 +15,9 @@ class AlertPreference(models.Model):
     daily_time = models.TimeField(default=time(8, 0))
     rahu_lead_minutes = models.PositiveSmallIntegerField(default=15)
     periods = models.BooleanField(default=True)        # each daytime choghadiya as it begins
+    periods_night = models.BooleanField(default=True)  # each night choghadiya (silent on the phone)
+    remedies = models.BooleanField(default=True)       # one daily reminder listing the remedies due
+    remedy_time = models.TimeField(default=time(7, 0))
     updated_at = models.DateTimeField(auto_now=True)
 
     PRO_FIELDS = ("transit", "sade_sati")

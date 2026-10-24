@@ -19,12 +19,15 @@ module.exports = {
   owner: undefined, // EAS account owner, if any
 
   // --- Assets ---------------------------------------------------------------------
+  // Sources (plus SVGs and web sizes) live in docs/icons.
   assets: {
     icon: './assets/icon.png',
-    splashImage: './assets/splash-icon.png',
-    adaptiveForeground: './assets/android-icon-foreground.png',
-    adaptiveBackground: './assets/android-icon-background.png',
-    adaptiveMonochrome: './assets/android-icon-monochrome.png',
+    splashImage: './assets/splash-icon.png', // transparent, used on both light and dark splash
+    adaptiveForeground: './assets/adaptive-icon-foreground.png',
+    adaptiveBackground: './assets/adaptive-icon-background.png',
+    adaptiveBackgroundColor: '#100F17', // shown behind the background image while it loads
+    adaptiveMonochrome: './assets/adaptive-icon-monochrome.png',
+    notificationIcon: './assets/notification-icon.png', // Android status bar: white on transparent
     favicon: './assets/favicon.png',
   },
   logoGlyph: '☽', // the breathing orb on sign-in / sign-up

@@ -50,7 +50,8 @@ export default function OnboardingRemedies() {
 
   const groups = data ? [
     ...data.goals.map((g) => ({ key: g.key, title: g.label, glyph: g.glyph, items: data.remedies.filter((r) => r.goal === g.key) })),
-    { key: '', title: null, items: data.remedies.filter((r) => !data.goals.some((g) => g.key === r.goal)) },
+    // Remedies for the lagna lord, Chandra and the current dasha lords, whatever the goals.
+    { key: '', title: t('remedies.fromChart'), glyph: '✦', items: data.remedies.filter((r) => !data.goals.some((g) => g.key === r.goal)) },
   ].filter((g) => g.items.length) : [];
 
   const action = (label, onPress) => (

@@ -90,6 +90,9 @@ export default function RemedyDetail() {
         )}
         <Text style={[th.font.display(400), { fontSize: 22, color: th.c.ink, textAlign: 'center' }]}>{data.title}</Text>
         <T v="small" style={{ fontSize: 13, marginTop: 3, textAlign: 'center' }}>{data.text || data.cadence}</T>
+        {data.basis_label ? (
+          <T v="caption" style={{ marginTop: 4, textAlign: 'center', color: th.c.accentDark }}>{data.basis_label}</T>
+        ) : null}
         {isCounter && !data.today.completed ? <T v="tiny" style={{ marginTop: 6 }}>{t('remedies.tapCount')}</T> : null}
       </View>
 
