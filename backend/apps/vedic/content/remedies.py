@@ -1,10 +1,10 @@
 """Remedy catalogue: mantra, fasting, charity and gemstone for each graha."""
 from .common import HINDI, SANSKRIT, WEEKDAY, PLANET_DAY
 
-KINDS = ("mantra", "fast", "charity", "gem")
-KIND_GLYPH = {"mantra": "ॐ", "fast": "◐", "charity": "❋", "gem": "◆"}
-KIND_LABEL = {"en": {"mantra": "Mantra", "fast": "Fasting", "charity": "Charity", "gem": "Gemstone"},
-              "hi": {"mantra": "मंत्र", "fast": "व्रत", "charity": "दान", "gem": "रत्न"}}
+KINDS = ("mantra", "fast", "charity", "gem")  # per graha; "seva" is chart-wide (see SEVA)
+KIND_GLYPH = {"mantra": "ॐ", "fast": "◐", "charity": "❋", "gem": "◆", "seva": "✿"}
+KIND_LABEL = {"en": {"mantra": "Mantra", "fast": "Fasting", "charity": "Charity", "gem": "Gemstone", "seva": "Seva"},
+              "hi": {"mantra": "मंत्र", "fast": "व्रत", "charity": "दान", "gem": "रत्न", "seva": "सेवा"}}
 MANTRA_TARGET = 108
 
 # planet -> mantra (en text, hi text), charity (en, hi), gem (en, hi, finger en, finger hi)
@@ -51,9 +51,22 @@ _DOMAIN = {
 }
 
 
+# Gau seva for grahas born in Gandmool nakshatras: no graha of its own, every day.
+SEVA = {
+    "en": {"title": "Gau seva · feed hara chara", "cadence": "about 15 min · daily",
+           "how": "Spend about 15 minutes near a cow and feed it fresh hara chara (green fodder) with your own "
+                  "hands. Gau seva calms the grahas that were in Gandmool nakshatras when you were born."},
+    "hi": {"title": "गौ सेवा · हरा चारा खिलाएँ", "cadence": "लगभग 15 मिनट · रोज़",
+           "how": "लगभग 15 मिनट गाय के पास बिताएँ और अपने हाथों से उसे ताज़ा हरा चारा खिलाएँ। गौ सेवा उन ग्रहों को "
+                  "शांत करती है जो आपके जन्म के समय गंडमूल नक्षत्र में थे।"},
+}
+
+
 def remedy(planet: str, kind: str, lang: str) -> dict:
     """Display data for one remedy (title, cadence, how & why...)."""
     hi = lang == "hi"
+    if kind == "seva":
+        return {**SEVA["hi" if hi else "en"], "text": "", "target": 1, "weekday": None}
     d = _DATA[planet]
     day = WEEKDAY[lang][PLANET_DAY[planet]]
     name = HINDI[planet] if hi else SANSKRIT[planet]
@@ -102,6 +115,11 @@ BASIS = {
     "moon": ("Chandra", "चंद्र", "For your Moon (Chandra)", "आपके चंद्रमा के लिए"),
     "mahadasha": ("Mahadasha", "महादशा", "For your Mahadasha lord", "आपकी महादशा के स्वामी के लिए"),
     "antardasha": ("Antardasha", "अंतर्दशा", "For your Antardasha lord", "आपकी अंतर्दशा के स्वामी के लिए"),
+    "gandmool": ("Gandmool", "गंडमूल",
+                 "For your Moon, born in a Gandmool nakshatra (a one-time Gandmool shanti puja is also traditional)",
+                 "गंडमूल नक्षत्र में जन्मे आपके चंद्र के लिए (एक बार गंडमूल शांति पूजा भी परंपरा है)"),
+    "gandmool_birth": ("Gandmool", "गंडमूल", "For grahas born in Gandmool nakshatras: {planets}",
+                       "जन्म के समय गंडमूल नक्षत्र में ग्रहों के लिए: {planets}"),
 }
 
 
@@ -110,6 +128,9 @@ def basis_short(reasons: list[str], lang: str) -> str:
     return BASIS[reasons[0]][1 if lang == "hi" else 0] if reasons and reasons[0] in BASIS else ""
 
 
-def basis_label(reasons: list[str], lang: str) -> str:
-    """All reasons, e.g. "For your Mahadasha lord · For your lagna lord"."""
-    return " · ".join(BASIS[r][3 if lang == "hi" else 2] for r in reasons if r in BASIS)
+def basis_label(reasons: list[str], lang: str, planets: list[str] = ()) -> str:
+    """All reasons, e.g. "For your Mahadasha lord · For your lagna lord". `planets` fills the grahas a
+    "gandmool_birth" reason is for."""
+    hi = lang == "hi"
+    names = ", ".join((HINDI if hi else SANSKRIT)[p] for p in planets)
+    return " · ".join(BASIS[r][3 if hi else 2].format(planets=names) for r in reasons if r in BASIS)

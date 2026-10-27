@@ -4,13 +4,14 @@ from django.db import models
 
 class UserRemedy(models.Model):
     """A remedy the user follows: a catalogue remedy for a graha (mantra / fast / charity / gemstone),
-    optionally edited by the user, or a custom remedy the user wrote."""
+    a chart-wide seva (no graha), optionally edited by the user, or a custom remedy the user wrote."""
 
     class Kind(models.TextChoices):
         MANTRA = "mantra", "Mantra"
         FAST = "fast", "Fasting"
         CHARITY = "charity", "Charity"
         GEM = "gem", "Gemstone"
+        SEVA = "seva", "Seva"  # chart-wide, planet "": gau seva for grahas born in Gandmool nakshatras
         CUSTOM = "custom", "Custom"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="remedies")
@@ -20,7 +21,9 @@ class UserRemedy(models.Model):
     # The goal that suggested this remedy ("" = dasha fallback or added by the user).
     goal = models.CharField(max_length=20, blank=True)
     # Chart reasons this remedy is suggested for, whatever the goals: "lagna" (lagna lord), "moon",
-    # "mahadasha", "antardasha" (their lords). Kept up to date as the dasha moves on.
+    # "mahadasha", "antardasha" (their lords), "gandmool" (lord of a Gandmool birth nakshatra of
+    # Chandra), "gandmool_birth" (any graha born in a Gandmool nakshatra: gau seva). Kept up to date
+    # as the dasha moves on.
     basis = models.JSONField(default=list, blank=True)
     # Added by the user (POST), as opposed to suggested; suggestions can be retired automatically.
     user_added = models.BooleanField(default=False)

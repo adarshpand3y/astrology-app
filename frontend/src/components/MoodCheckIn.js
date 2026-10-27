@@ -6,6 +6,7 @@ import { journalApi } from '../api/endpoints';
 import { useJournalDay } from '../hooks/data';
 import { invalidate, setCached } from '../hooks/useApi';
 import { useI18n } from '../i18n';
+import { requireOnline } from '../network';
 import { useTheme } from '../theme';
 import { todayISO } from '../utils/format';
 import { Icon, MOOD_ICONS } from './Icons';
@@ -35,7 +36,7 @@ export function MoodCheckIn() {
   const ratings = t('journal.ratings');
 
   const pick = async (rating) => {
-    if (!data || entry?.rating === rating) return;
+    if (!data || entry?.rating === rating || !requireOnline(t)) return;
     const body = { rating, tags: entry?.tags || [], note: entry?.note || '' };
     setCached(key, { ...data, entry: { ...(entry || {}), ...body } });
     setSaveError(null);

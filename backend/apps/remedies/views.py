@@ -66,7 +66,8 @@ class FieldsSerializer(serializers.Serializer):
 
 
 class RemedyListView(APIView):
-    @extend_schema(responses={200: OpenApiTypes.OBJECT}, summary="My remedies, goals, streak and focus graha")
+    @extend_schema(responses={200: OpenApiTypes.OBJECT}, operation_id="remedies_list",
+                   summary="My remedies, goals, streak and focus graha")
     def get(self, request):
         return Response(list_payload(request))
 

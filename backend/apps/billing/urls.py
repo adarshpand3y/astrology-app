@@ -7,4 +7,5 @@ app_name = "billing"
 urlpatterns = [
     path("", views.BillingView.as_view(), name="status"),
     path("trial/", views.StartTrialView.as_view(), name="trial"),
+    path("webhooks/razorpay/", views.razorpay_webhook, name="razorpay-webhook"),
 ]

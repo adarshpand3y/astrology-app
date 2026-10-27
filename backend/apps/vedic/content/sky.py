@@ -1,11 +1,13 @@
-"""What to do and what to avoid while a graha is retrograde, combust, exalted or debilitated.
+"""What to do and what to avoid while a graha is retrograde, combust, exalted, debilitated or in a
+Gandmool nakshatra.
 
 Each entry: (en note, en do, en avoid, hi note, hi do, hi avoid). Notes may use {house} for the
 house the graha is transiting, counted from the user's lagna (an ordinal: "10th" / "दसवें").
 """
-from .common import ordinal
+from .common import HINDI, NAKSHATRA_HI, SANSKRIT, ordinal
+from apps.vedic.engine.constants import NAKSHATRA_LORDS, NAKSHATRAS
 
-CONDITIONS = ("retrograde", "exalted", "debilitated", "combust")  # display order
+CONDITIONS = ("retrograde", "exalted", "debilitated", "combust", "gandmool")  # display order
 
 # Condition badges: (en, hi).
 LABEL = {
@@ -13,6 +15,7 @@ LABEL = {
     "combust": ("(C) Combust", "(C) अस्त"),
     "exalted": ("Exalted", "उच्च"),
     "debilitated": ("Debilitated", "नीच"),
+    "gandmool": ("Gandmool", "गंडमूल"),
 }
 
 _GUIDE = {
@@ -285,9 +288,54 @@ _GUIDE = {
 }
 
 
-def guide(planet: str, condition: str, house: int, lang: str) -> dict | None:
-    """{label, note, do, avoid} for a graha in a condition, or None if there's no guidance."""
-    entry = _GUIDE.get(planet, {}).get(condition)
+# Gandmool guidance is the same for every graha (Chandra gets its own, as the day's Moon matters most),
+# filled with the graha, the nakshatra, its lord and the deity worshipped for it: Ganesha for the
+# Ketu-ruled ones, Vishnu for Budh's.
+_GANDMOOL = {
+    "Mo": (
+        "Chandra is in {nak}, a Gandmool nakshatra where a water sign meets a fire sign: the mind can feel "
+        "unsettled today, especially about matters of your {house} house.",
+        ["Keep the day steady and finish what's underway", "Pray to {deity}", "Chant the {lord} beej mantra"],
+        ["Starting important ventures or signing big deals", "Decisions taken in a rush or a mood"],
+        "चंद्र {nak} में है, एक गंडमूल नक्षत्र जहाँ जल राशि अग्नि राशि से मिलती है: आज मन अस्थिर रह सकता है, "
+        "ख़ासकर आपके {house} भाव के मामलों में।",
+        ["दिन स्थिर रखें और चल रहे काम पूरे करें", "{deity} की पूजा करें", "{lord} बीज मंत्र का जप करें"],
+        ["महत्वपूर्ण काम शुरू करना या बड़े सौदे", "जल्दबाज़ी या मनोदशा में लिए निर्णय"],
+    ),
+    "": (
+        "{planet} is passing through {nak}, a Gandmool nakshatra where a water sign meets a fire sign: its "
+        "results in your {house} house can come in fits and starts.",
+        ["Give {planet}'s matters extra patience", "Pray to {deity}", "Chant the {lord} beej mantra"],
+        ["Forcing outcomes in {planet}'s areas", "Overreacting to sudden changes"],
+        "{planet} {nak} से गुज़र रहा है, एक गंडमूल नक्षत्र जहाँ जल राशि अग्नि राशि से मिलती है: आपके {house} भाव में "
+        "इसके फल रुक-रुक कर मिल सकते हैं।",
+        ["{planet} के मामलों में अधिक धैर्य रखें", "{deity} की पूजा करें", "{lord} बीज मंत्र का जप करें"],
+        ["{planet} के क्षेत्रों में ज़बरदस्ती परिणाम चाहना", "अचानक बदलावों पर ज़्यादा प्रतिक्रिया"],
+    ),
+}
+_GANDMOOL_DEITY = {"Ke": ("Ganesha", "गणेश"), "Me": ("Vishnu", "विष्णु")}
+
+
+def _gandmool_entry(planet: str, nakshatra: int) -> tuple:
+    lord = NAKSHATRA_LORDS[nakshatra]
+    en = {"planet": SANSKRIT[planet], "nak": NAKSHATRAS[nakshatra], "lord": SANSKRIT[lord],
+          "deity": _GANDMOOL_DEITY[lord][0], "house": "{house}"}
+    hi = {"planet": HINDI[planet], "nak": NAKSHATRA_HI[nakshatra], "lord": HINDI[lord],
+          "deity": _GANDMOOL_DEITY[lord][1], "house": "{house}"}
+    entry = _GANDMOOL.get(planet) or _GANDMOOL[""]
+
+    def fill(value, names):
+        return [x.format(**names) for x in value] if isinstance(value, list) else value.format(**names)
+    return tuple(fill(v, en if i < 3 else hi) for i, v in enumerate(entry))
+
+
+def guide(planet: str, condition: str, house: int, lang: str, nakshatra: int | None = None) -> dict | None:
+    """{label, note, do, avoid} for a graha in a condition, or None if there's no guidance.
+    `nakshatra` (0-based) is needed for "gandmool"."""
+    if condition == "gandmool":
+        entry = _gandmool_entry(planet, nakshatra) if nakshatra is not None else None
+    else:
+        entry = _GUIDE.get(planet, {}).get(condition)
     if entry is None:
         return None
     o = 3 if lang == "hi" else 0

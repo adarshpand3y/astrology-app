@@ -41,7 +41,7 @@ export default {
     nextPeriod: 'अगला · {name} {t}', viewTimeline: 'पूरी समयरेखा देखें',
     skyTitle: 'अभी ग्रह', skyAll: 'सभी {n}', skyRetroFilter: '(R) वक्री · {n}',
     skyCombustFilter: '(C) अस्त · {n}', skyRetro: '(R) वक्री', skyCombust: '(C) अस्त', skyExalted: 'उच्च',
-    skyDebilitated: 'नीच', skyHouse: 'भाव {n}', skyPada: 'पद {n}', skyUntil: '{d} तक', skyDo: 'करें', skyAvoid: 'टालें',
+    skyDebilitated: 'नीच', skyGandmool: 'गंडमूल', skyGandmoolFilter: 'गंडमूल · {n}', skyHouse: 'भाव {n}', skyPada: 'पद {n}', skyUntil: '{d} तक', skyDo: 'करें', skyAvoid: 'टालें',
     skyFootLagna: 'निरयण · {ayanamsa} अयनांश · भाव आपके {sign} लग्न से। अस्त = सूर्य के बहुत पास, पूरा फल नहीं दे पाता।',
     skyFootMoon: 'निरयण · {ayanamsa} अयनांश · भाव आपकी चंद्र राशि ({sign}) से, क्योंकि जन्म समय ज्ञात नहीं। अस्त = सूर्य के बहुत पास, पूरा फल नहीं दे पाता।',
     noProfileTitle: 'अपना जन्म विवरण जोड़ें', noProfileSub: 'आपका दैनिक मार्गदर्शन आपकी कुंडली से पढ़ा जाता है।',
@@ -139,8 +139,17 @@ export default {
     heatNone: '{date} · कोई उपाय नियत नहीं', heatTap: 'किसी दिन पर टैप करके देखें', heatSwipe: 'पुराना इतिहास देखने के लिए दाएँ स्वाइप करें',
     activeDays: 'सक्रिय दिन', completions: 'उपाय पूरे', bestStreak: 'सर्वश्रेष्ठ क्रम',
   },
+  offline: {
+    title: 'आप ऑफ़लाइन हैं', banner: 'आप ऑफ़लाइन हैं · सहेजा गया डेटा दिख रहा है',
+    readOnly: 'बदलाव के लिए इंटरनेट चाहिए। आपका सहेजा हुआ सब कुछ पढ़ने के लिए यहाँ मौजूद है।',
+  },
+  update: {
+    title: 'अपडेट का समय', sub: '{app} का यह संस्करण अब समर्थित नहीं है। आगे बढ़ने के लिए नया संस्करण इंस्टॉल करें।',
+    cta: '{store} पर अपडेट करें', playStore: 'Google Play', appStore: 'App Store',
+    version: 'आपका संस्करण {v} है।', versions: 'आपका संस्करण {v} है; {min} या नया चाहिए।',
+  },
   onboarding: {
-    step: 'चरण {n} / 3', signOut: 'दूसरे खाते से जाएँ',
+    step: 'चरण {n} / 4', signOut: 'दूसरे खाते से जाएँ',
     profileTitle: 'आपका जन्म विवरण',
     profileSub: 'आपकी कुंडली एक बार बनती है, आपके जन्म के क्षण से। {app} में सब कुछ उसी से निकलता है।',
     profileCta: 'मेरी कुंडली बनाएँ',
@@ -151,6 +160,10 @@ export default {
     remediesTitle: 'आपके उपाय',
     remediesSub: 'आपके लक्ष्यों के लिए सुझाए गए। अपनी दिनचर्या के अनुसार कुछ भी बदलें, या जो न जँचे उसे हटाएँ।',
     remediesSubFree: 'आपके लक्ष्यों के लिए सुझाए गए। जो न जँचे उसे हटाएँ — प्रो के साथ आप इन्हें बदल भी सकते हैं।',
+    remediesCta: 'आगे: आपकी पसंद',
+    prefsTitle: 'अपने अनुसार बनाएँ',
+    prefsSub: 'चुनें कि {app} कैसा दिखे और आपको कौन-सी सूचनाएँ भेजे।',
+    prefsAlerts: 'सूचनाएँ', prefsLater: 'यह सब आप बाद में सेटिंग्स और सूचनाएँ में बदल सकते हैं।',
     begin: 'अभ्यास शुरू करें',
   },
   goals: {

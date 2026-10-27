@@ -91,7 +91,7 @@ def test_home(client, lang):
     by = {p["planet"]: p for p in sky["planets"]}
     assert by["Ra"]["retrograde"] and by["Ke"]["retrograde"]  # the nodes always move backwards
     for pl in sky["planets"]:  # one guide per condition the graha is in, each with do and avoid
-        active = {c for c in ("retrograde", "combust") if pl[c]} | ({pl["dignity"]} if pl["dignity"] else set())
+        active = {c for c in ("retrograde", "combust", "gandmool") if pl[c]} | ({pl["dignity"]} if pl["dignity"] else set())
         assert {g["condition"] for g in pl["guide"]} == active
         assert all(g["note"] and g["do"] and g["avoid"] and g["label"] for g in pl["guide"])
         assert all("{house}" not in g["note"] for g in pl["guide"])
@@ -190,7 +190,11 @@ def test_chart_remedies(client):
     from apps.vedic import services as vedic
 
     remedies = client.get("/api/v1/remedies/").data["remedies"]
-    chart = [x for x in remedies if x["basis"]]
+    # This chart has grahas born in Gandmool nakshatras, so gau seva joins the mantras.
+    assert rs.gandmool_birth_planets(BirthProfile.objects.get(owner__email="ananya@example.com"))
+    seva = [x for x in remedies if x["kind"] == "seva"]
+    assert len(seva) == 1 and seva[0]["basis"] == ["gandmool_birth"]
+    chart = [x for x in remedies if x["basis"] and x["kind"] != "seva"]
     assert {b for x in chart for b in x["basis"]} == {"lagna", "moon", "mahadasha", "antardasha"}  # birth time known
     assert all(x["kind"] == "mantra" for x in chart)
     assert len({x["planet"] for x in chart}) == len(chart)  # one mantra per graha, reasons merged
@@ -219,6 +223,87 @@ def test_chart_remedies(client):
     for p in old_only:
         r = UserRemedy.objects.get(user=user, planet=p, kind="mantra")
         assert r.archived_at is not None and r.basis == []
+
+
+def test_gandmool_moon_adds_the_nakshatra_lords_mantra(client, monkeypatch):
+    """Chandra born in a Gandmool nakshatra: that nakshatra's lord (Budh or Ketu) gets a mantra too."""
+    import copy
+
+    from apps.profiles.models import BirthProfile
+    from apps.remedies import services as rs
+    from apps.vedic import services as vedic
+
+    user = User.objects.get(email="ananya@example.com")
+    profile = BirthProfile.objects.get(owner=user)
+    real = vedic.get_chart
+
+    def chart_with_moon_in(index, lord):
+        def fake(p):
+            chart = copy.deepcopy(real(p))
+            moon = next(x for x in chart["planets"] if x["code"] == "Mo")
+            moon["nakshatra"] = {**moon["nakshatra"], "index": index, "lord": lord}
+            return chart
+        return fake
+
+    monkeypatch.setattr(vedic, "get_chart", chart_with_moon_in(9, "Me"))  # Ashlesha
+    assert rs.chart_reasons(profile).get("Me", [])[-1] == "gandmool"
+    rs.sync_chart(user, profile)
+    budh = client.get("/api/v1/remedies/").data["remedies"]
+    budh = next(x for x in budh if x["planet"] == "Me" and x["kind"] == "mantra")
+    assert "gandmool" in budh["basis"] and "Gandmool" in budh["basis_label"]
+
+    monkeypatch.setattr(vedic, "get_chart", chart_with_moon_in(4, "Mo"))  # Rohini: not Gandmool
+    assert "gandmool" not in {b for reasons in rs.chart_reasons(profile).values() for b in reasons}
+
+
+def test_gandmool_birth_adds_gau_seva(client, monkeypatch):
+    """Any graha born in a Gandmool nakshatra: one daily gau seva remedy (no graha), naming them."""
+    import copy
+
+    from apps.profiles.models import BirthProfile
+    from apps.remedies import services as rs
+    from apps.remedies.models import UserRemedy
+    from apps.vedic import services as vedic
+
+    user = User.objects.get(email="ananya@example.com")
+    profile = BirthProfile.objects.get(owner=user)
+    real = vedic.get_chart
+
+    def chart_with(gandmool: dict[str, int]):
+        """Every graha moved out of Gandmool nakshatras, then `gandmool` (code -> 1-based index) moved in."""
+        def fake(p):
+            chart = copy.deepcopy(real(p))
+            for x in chart["planets"]:
+                x["nakshatra"] = {**x["nakshatra"], "index": gandmool.get(x["code"], 4)}  # 4 = Rohini
+            return chart
+        return fake
+
+    def seva():
+        return [x for x in client.get("/api/v1/remedies/").data["remedies"] if x["kind"] == "seva"]
+
+    monkeypatch.setattr(vedic, "get_chart", chart_with({"Sa": 19, "Ju": 1}))  # Mula, Ashwini
+    rs.sync_chart(user, profile)
+    [r] = seva()
+    assert r["planet"] == "" and r["basis"] == ["gandmool_birth"] and r["goal_short"] == "Gandmool"
+    assert r["due_today"] and r["weekdays"] is None and r["target"] == 1  # daily
+    assert "15 minutes near a cow" in r["how"] and "hara chara" in r["title"]
+    assert r["basis_label"] == "For grahas born in Gandmool nakshatras: Guru, Shani"  # chart order
+    rs.sync_chart(user, profile)
+    assert len(seva()) == 1  # never doubled
+
+    # Removed by the user: not added back.
+    assert client.delete(f"/api/v1/remedies/{r['id']}/").status_code == 204
+    rs.sync_chart(user, profile)
+    assert not seva()
+
+    # No graha in a Gandmool nakshatra: no seva (and a kept one is retired).
+    UserRemedy.objects.filter(user=user, kind="seva").delete()
+    rs.sync_chart(user, profile)
+    assert len(seva()) == 1
+    monkeypatch.setattr(vedic, "get_chart", chart_with({}))
+    rs.sync_chart(user, profile)
+    assert not seva()
+    assert UserRemedy.objects.get(user=user, kind="seva").archived_at is not None
 
 
 def test_right_now_card(client):
@@ -264,7 +349,7 @@ def test_alert_feed_updates_chart_remedies(client):
     UserRemedy.objects.filter(user=user).exclude(basis=[]).delete()  # as if never synced
     items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
     reasons = {b for r in UserRemedy.objects.filter(user=user, archived_at__isnull=True) for b in r.basis}
-    assert reasons == {"lagna", "moon", "mahadasha", "antardasha"}
+    assert reasons == {"lagna", "moon", "mahadasha", "antardasha", "gandmool_birth"}
     assert any("Chandra beej mantra" in i["body"] for i in items if i["category"] == "remedy")
 
 

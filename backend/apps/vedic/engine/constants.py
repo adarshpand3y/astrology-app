@@ -71,6 +71,9 @@ VIMSHOTTARI_YEARS = {KE: 7, VE: 20, SU: 6, MO: 10, MA: 7, RA: 18, JU: 16, SA: 19
 VIMSHOTTARI_TOTAL = 120
 
 NAKSHATRA_LORDS = [VIMSHOTTARI_ORDER[i % 9] for i in range(27)]
+# Gandmool: the six nakshatras where a water sign ends and a fire sign begins (0-based): Ashwini,
+# Ashlesha, Magha, Jyeshtha, Mula, Revati. Ketu rules three of them, Budh the other three.
+GANDMOOL_NAKSHATRAS = frozenset({0, 8, 9, 17, 18, 26})
 
 _D, _M, _R = "Deva", "Manushya", "Rakshasa"
 NAKSHATRA_GANA = [

@@ -5,10 +5,12 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { setApiLanguage } from '../api/client';
+import { appUpdate, setApiLanguage } from '../api/client';
+import { UpdateRequired } from '../components/UpdateRequired';
+import { hydrateCache } from '../hooks/useApi';
 import { useI18n } from '../i18n';
 import { setupNotifications, syncSchedule } from '../notifications';
 import { AuthProvider, useAuth } from '../state/AuthContext';
@@ -39,7 +41,12 @@ function RootNavigator() {
     HankenGrotesk_400Regular, HankenGrotesk_500Medium, HankenGrotesk_600SemiBold, HankenGrotesk_700Bold,
     SplineSansMono_400Regular, SplineSansMono_500Medium, SplineSansMono_600SemiBold,
   });
-  const booting = status === 'loading' || !ready || (!fontsLoaded && !fontError);
+  const [update, setUpdate] = useState(appUpdate.get);
+  useEffect(() => appUpdate.subscribe(setUpdate), []);
+  // Saved results (for offline use) load before any screen mounts.
+  const [cacheReady, setCacheReady] = useState(false);
+  useEffect(() => { hydrateCache().finally(() => setCacheReady(true)); }, []);
+  const booting = !cacheReady || status === 'loading' || !ready || (!fontsLoaded && !fontError);
 
   useEffect(() => { setApiLanguage(lang); }, [lang]);
   useEffect(() => {
@@ -60,6 +67,8 @@ function RootNavigator() {
   }, [booting, status, t]);
 
   if (booting) return null;
+  // The server refuses this build: nothing else works until the user updates from the store.
+  if (update) return <><StatusBar style={theme.dark ? 'light' : 'dark'} /><UpdateRequired minVersion={update.minVersion} /></>;
   const signedIn = status === 'signedIn';
   // New accounts finish onboarding (birth profile, then goals) before reaching the app.
   // `user` can be null after an offline launch; let those users into the app.

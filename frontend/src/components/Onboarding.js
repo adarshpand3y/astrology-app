@@ -6,7 +6,7 @@ import { useTheme } from '../theme';
 import { AuthScreen } from './AuthScreen';
 import { Row, T } from './ui';
 
-/** Onboarding step canvas: "Step n of 3" progress bar, sign-out escape hatch, then the auth layout. */
+/** Onboarding step canvas: "Step n of 4" progress bar, sign-out escape hatch, then the auth layout. */
 export function OnboardingScreen({ step, title, sub, children }) {
   const th = useTheme();
   const { t } = useI18n();
@@ -20,7 +20,7 @@ export function OnboardingScreen({ step, title, sub, children }) {
         </Pressable>
       </Row>
       <Row gap={6}>
-        {[1, 2, 3].map((n) => (
+        {[1, 2, 3, 4].map((n) => (
           <View key={n} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: n <= step ? th.c.accent : th.c.track }} />
         ))}
       </Row>

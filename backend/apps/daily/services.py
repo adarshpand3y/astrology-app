@@ -16,7 +16,7 @@ from apps.vedic.engine import transits as tr
 from apps.vedic.engine.attributes import is_combust
 from apps.vedic.engine.chart import compute_day_panchang, jsonable
 from apps.vedic.engine.constants import (
-    DEBILITATION, EXALTATION, NAKSHATRA_SPAN, NAKSHATRAS, PADA_SPAN, SIGNS, SIGNS_SANSKRIT,
+    DEBILITATION, EXALTATION, GANDMOOL_NAKSHATRAS, NAKSHATRA_SPAN, NAKSHATRAS, PADA_SPAN, SIGNS, SIGNS_SANSKRIT,
 )
 from apps.vedic.engine.decision import rank_windows
 from apps.vedic.engine.muhurta import compute_muhurtas, find
@@ -199,10 +199,11 @@ def sky(ctx: DayContext, n: dict, positions: dict) -> dict:
         active = {
             "retrograde": st["retrograde"] or code in ("Ra", "Ke"),  # the nodes always move backwards
             "exalted": dignity == "exalted", "debilitated": dignity == "debilitated", "combust": st["combust"],
+            "gandmool": nak in GANDMOOL_NAKSHATRAS,
         }
         guide = []
         for cond in sky_text.CONDITIONS:
-            text = active[cond] and sky_text.guide(code, cond, house, ctx.lang)
+            text = active[cond] and sky_text.guide(code, cond, house, ctx.lang, nakshatra=nak)
             if text:
                 # Retrograde / combust spells end; the nodes' motion and a sign placement don't.
                 until = st.get(f"{cond}_until") if cond in ("retrograde", "combust") and st[cond] else None
@@ -211,6 +212,7 @@ def sky(ctx: DayContext, n: dict, positions: dict) -> dict:
             "planet": code, "sign": SIGNS[sign], "sign_sanskrit": SIGNS_SANSKRIT[sign], "degree": lon % 30,
             "nakshatra": NAKSHATRAS[nak], "pada": int((lon % NAKSHATRA_SPAN) // PADA_SPAN) + 1,
             "house": house, "dignity": dignity, "retrograde": active["retrograde"], "combust": active["combust"],
+            "gandmool": active["gandmool"],
             # What to do and avoid for each condition the graha is in (shown when its row is opened).
             "guide": guide,
         })

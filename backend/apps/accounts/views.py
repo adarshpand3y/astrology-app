@@ -8,6 +8,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from apps.billing import emails as premium_emails
+from apps.billing.services import apply_pending_payments
 from apps.core.exceptions import ServiceError, ServiceUnavailable
 from apps.core.throttles import AuthRateThrottle, OtpRateThrottle
 
@@ -44,6 +46,8 @@ class RegisterView(APIView):
                 raise
             body["detail"] = "Verification code sent to email."
         else:
+            apply_pending_payments(user)  # bought Pro on the website before signing up
+            premium_emails.send_due(user)
             body.update(services.tokens_for(user))
         return Response(body, status=status.HTTP_201_CREATED)
 
@@ -62,6 +66,8 @@ class VerifyEmailView(APIView):
             raise ServiceError("Invalid or expired code.", code="invalid_code")
         user.is_email_verified = True
         user.save(update_fields=["is_email_verified"])
+        apply_pending_payments(user)  # bought Pro on the website before signing up
+        premium_emails.send_due(user)  # the first "unlock Pro" email, if enabled
         return Response({**services.tokens_for(user), "user": UserSerializer(user).data})
 
 
@@ -169,5 +175,6 @@ class PasswordResetConfirmView(APIView):
         user.set_password(data["new_password"])
         user.is_email_verified = True  # proved control of the mailbox
         user.save(update_fields=["password", "is_email_verified"])
+        apply_pending_payments(user)
         services.revoke_all_tokens(user)
         return Response({"detail": "Password has been reset."})

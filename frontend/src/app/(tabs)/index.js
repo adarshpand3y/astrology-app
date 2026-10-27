@@ -112,7 +112,7 @@ function HomeContent() {
             <Text style={{ fontSize: 13, color: th.c.accent }}>◈</Text>
             <T weight={600} style={{ fontSize: 12.5, color: th.c.accent }}>{t('home.why')}</T>
           </Row>
-          <Text style={{ fontSize: 11, color: th.c.ink3, transform: [{ rotate: whyOpen ? '180deg' : '0deg' }] }}>▾</Text>
+          <Text style={{ fontSize: 20, lineHeight: 22, color: th.c.ink2, transform: [{ rotate: whyOpen ? '180deg' : '0deg' }] }}>▾</Text>
         </Pressable>
         {whyOpen ? (
           <Animated.View>
@@ -128,7 +128,7 @@ function HomeContent() {
 
       {/* current dasha + the period in force right now */}
       <Row gap={12} align="stretch" style={{ marginTop: 14 }}>
-        <Card radius={18} pad={15} style={{ flex: 1 }} onPress={() => router.push('/chart/dasha')}>
+        <Card radius={18} pad={15} style={{ flex: 1 }} onPress={() => router.push('/chart/dasha', { withAnchor: true })}>
           <T v="eyebrow" style={{ fontSize: 9 }}>{t('home.currentDasha')}</T>
           <Row gap={7} style={{ marginTop: 8 }}>
             <CardGlyph glyph={GLYPH[md.lord]} tone="good" />

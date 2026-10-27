@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 
 import { alertsApi } from '../../../api/endpoints';
-import { BackLink, Button, ErrorView, Loading, Row, Screen, Switch, T } from '../../../components/ui';
+import { AlertToggles } from '../../../components/Preferences';
+import { BackLink, Button, ErrorView, Loading, Row, Screen, T } from '../../../components/ui';
 import { APP_ENV } from '../../../config/env';
 import { invalidate, setCached } from '../../../hooks/useApi';
 import { useAlertPrefs, useSchedule } from '../../../hooks/data';
@@ -13,9 +14,7 @@ import {
   requestPermission, syncSchedule,
 } from '../../../notifications';
 import { useTheme } from '../../../theme';
-import { clock, shortDate } from '../../../utils/format';
-
-const FIELDS = ['dasha', 'transit', 'rahu', 'sade_sati', 'daily', 'remedies', 'periods', 'periods_night'];
+import { shortDate } from '../../../utils/format';
 
 export default function Alerts() {
   const th = useTheme();
@@ -47,15 +46,6 @@ export default function Alerts() {
       setCached('alert-prefs', p);
       Alert.alert(t('common.unknownError'), e.message);
     }
-  };
-
-  const sub = (field) => {
-    if (field === 'rahu') return t('alerts.rahuSub', { n: p.rahu_lead_minutes });
-    if (field === 'daily' || field === 'remedies') {
-      const [h, m] = (field === 'daily' ? p.daily_time : p.remedy_time).split(':');
-      return t(`alerts.${field}Sub`, { t: clock(`2000-01-01T${h}:${m}`, lang, true) });
-    }
-    return t(`alerts.${field}Sub`);
   };
 
   const accentFor = (k) => (k === 'bad' ? th.kind.bad.solid : k === 'good' ? th.kind.good.solid : th.c.accent);
@@ -103,19 +93,7 @@ export default function Alerts() {
       </View>
 
       <T v="eyebrow" style={{ marginHorizontal: 2, marginBottom: 10 }}>{t('alerts.what')}</T>
-      <View style={{ backgroundColor: th.c.surface, borderWidth: 1, borderColor: th.c.hair, borderRadius: 18, overflow: 'hidden' }}>
-        {FIELDS.map((f, i) => (
-          <Row key={f} gap={13} style={{ paddingVertical: 14, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: th.c.hair }}>
-            <View style={{ flex: 1 }}>
-              <T weight={600} style={{ fontSize: 14 }}>
-                {t(`alerts.${f}`)}{p.pro_fields.includes(f) && !p.is_pro ? <Text style={{ color: th.c.accent, fontSize: 11 }}>  ◆ {t('common.pro')}</Text> : null}
-              </T>
-              <T v="caption" style={{ marginTop: 1 }}>{sub(f)}</T>
-            </View>
-            <Switch value={!!p[f]} onChange={() => toggle(f)} />
-          </Row>
-        ))}
-      </View>
+      <AlertToggles prefs={p} onToggle={toggle} />
       <ErrorView error={schedule.error} style={{ marginTop: 12 }} />
       {APP_ENV !== 'production' ? (
         <Button small variant="secondary" title="Scheduled notifications (debug)" style={{ marginTop: 16 }}

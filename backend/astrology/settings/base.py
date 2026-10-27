@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -43,6 +44,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "apps.core.middleware.MinAppVersionMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -134,6 +136,12 @@ MAILERS = build_mailers(CONSOLE_BACKEND)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Astrology <no-reply@example.com>")
 # Branding used in emails (match frontend/brand.config.js).
 APP_NAME = env("APP_NAME", default="Guru Drishti")
+# Oldest app version the API still serves (empty = no check). Per-platform values override it.
+MIN_APP_VERSION = env("MIN_APP_VERSION", default="")
+MIN_APP_VERSIONS = {
+    "android": env("MIN_APP_VERSION_ANDROID", default=""),
+    "ios": env("MIN_APP_VERSION_IOS", default=""),
+}
 APP_TAGLINE = env("APP_TAGLINE", default="Vedic daily companion")
 EMAIL_ACCENT_COLOR = env("EMAIL_ACCENT_COLOR", default="#B0722F")
 
@@ -186,6 +194,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+CORS_ALLOW_HEADERS = (*default_headers, "x-app-version", "x-app-platform")
 
 # --- App settings -------------------------------------------------------------------
 ENABLE_TEST_UI = env.bool("ENABLE_TEST_UI", default=False)
@@ -198,6 +207,20 @@ PRO_TRIAL_DAYS = env.int("PRO_TRIAL_DAYS", default=7)
 PRO_CURRENCY = env("PRO_CURRENCY", default="INR")
 PRO_PRICE_MONTHLY = env.int("PRO_PRICE_MONTHLY", default=299)
 PRO_PRICE_ANNUAL = env.int("PRO_PRICE_ANNUAL", default=2499)
+
+# "Unlock Pro on the website" emails to free users. The checkout link lives here, not in code, and may
+# contain {email} to pre-fill it. Empty = no emails. PUBLIC_BASE_URL builds the unsubscribe links.
+PREMIUM_CHECKOUT_URL = env("PREMIUM_CHECKOUT_URL", default="")
+PREMIUM_EMAIL_DAYS = sorted(int(d) for d in env.list("PREMIUM_EMAIL_DAYS", default=["0", "3", "7"]))
+PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="")
+
+# Website payments. The webhook secret is set in Razorpay Dashboard -> Webhooks (empty = endpoint off).
+RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
+# Amount in paise -> Pro days, e.g. "29900:30,249900:365". Defaults to the monthly and annual prices above.
+RAZORPAY_PLANS = {
+    int(amount): int(days) for amount, days in (pair.split(":") for pair in env.list("RAZORPAY_PLANS", default=[
+        f"{PRO_PRICE_MONTHLY * 100}:30", f"{PRO_PRICE_ANNUAL * 100}:365"]))
+}
 
 LOGGING = {
     "version": 1,

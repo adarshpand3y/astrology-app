@@ -17,6 +17,7 @@ module.exports = {
   iosBundleIdentifier: 'com.gurudrishti.app',
   androidPackage: 'com.gurudrishti.app',
   owner: undefined, // EAS account owner, if any
+  iosAppStoreId: undefined, // numeric App Store id (apps.apple.com/app/id<…>), for the "update required" screen
 
   // --- Assets ---------------------------------------------------------------------
   // Sources (plus SVGs and web sizes) live in docs/icons.
@@ -34,7 +35,7 @@ module.exports = {
 
   // --- API ------------------------------------------------------------------------
   // Used when EXPO_PUBLIC_API_URL is not set and the app is not running in dev.
-  apiUrl: 'https://api.example.com',
+  apiUrl: 'https://api.acharayavishalmishra.com',
   devApiPort: 8000,
 
   // --- Theme ----------------------------------------------------------------------

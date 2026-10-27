@@ -8,6 +8,7 @@ import { BackLink, Button, ErrorView, Loading, Row, Screen, T } from '../../../c
 import { invalidate } from '../../../hooks/useApi';
 import { useJournalDay } from '../../../hooks/data';
 import { useI18n } from '../../../i18n';
+import { requireOnline } from '../../../network';
 import { useTheme } from '../../../theme';
 import { shortDate, todayISO } from '../../../utils/format';
 
@@ -41,6 +42,7 @@ function JournalForm({ data, today }) {
 
   const save = async () => {
     if (!rating) { setSaveError({ message: t('journal.pickRating') }); return; }
+    if (!requireOnline(t)) return;
     setBusy(true);
     setSaveError(null);
     try {

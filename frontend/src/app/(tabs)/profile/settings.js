@@ -4,11 +4,11 @@ import { Alert, View } from 'react-native';
 
 import { authApi } from '../../../api/endpoints';
 import { LocationPicker } from '../../../components/LocationPicker';
-import { BackLink, Button, Card, ErrorView, PasswordField, Row, Screen, Seg, T } from '../../../components/ui';
+import { AppearanceSettings } from '../../../components/Preferences';
+import { BackLink, Button, Card, ErrorView, PasswordField, Row, Screen, T } from '../../../components/ui';
 import { API_URL, APP_ENV, brand } from '../../../config/env';
-import { LANGUAGE_NAMES, LANGUAGES, useI18n } from '../../../i18n';
+import { useI18n } from '../../../i18n';
 import { useAuth } from '../../../state/AuthContext';
-import { usePrefs } from '../../../state/PrefsContext';
 import { fieldErrors } from '../../../utils/format';
 
 function Section({ title, children }) {
@@ -22,7 +22,6 @@ function Section({ title, children }) {
 
 export default function Settings() {
   const { t } = useI18n();
-  const { prefs, update } = usePrefs();
   const { user, updateMe, signOut, acceptTokens, signOutLocal } = useAuth();
 
   return (
@@ -31,23 +30,7 @@ export default function Settings() {
       <T v="screenTitle" style={{ paddingHorizontal: 2 }}>{t('settings.title')}</T>
 
       <Section title={t('settings.appearance')}>
-        <T v="label" style={{ marginBottom: 8 }}>{t('settings.theme')}</T>
-        <Seg value={prefs.themeMode} onChange={(v) => update({ themeMode: v })}
-          options={['system', 'light', 'dark'].map((v) => ({ value: v, label: t(`settings.${v}`) }))} />
-        {LANGUAGES.length > 1 ? (
-          <>
-            <T v="label" style={{ marginTop: 16, marginBottom: 8 }}>{t('settings.language')}</T>
-            <Seg value={prefs.language} onChange={(v) => update({ language: v })}
-              options={[{ value: 'system', label: t('settings.system') }, ...LANGUAGES.map((l) => ({ value: l, label: LANGUAGE_NAMES[l] }))]} />
-          </>
-        ) : null}
-        {brand.features.southIndianChart ? (
-          <>
-            <T v="label" style={{ marginTop: 16, marginBottom: 8 }}>{t('settings.chartStyle')}</T>
-            <Seg value={prefs.chartStyle} onChange={(v) => update({ chartStyle: v })}
-              options={[{ value: 'north', label: t('settings.north') }, { value: 'south', label: t('settings.south') }]} />
-          </>
-        ) : null}
+        <AppearanceSettings />
       </Section>
 
       <Section title={t('settings.location')}>

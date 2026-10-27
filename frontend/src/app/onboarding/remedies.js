@@ -8,21 +8,18 @@ import { RemedyCard } from '../../components/RemedyCard';
 import { Button, ErrorView, Loading, Row, T } from '../../components/ui';
 import { invalidate, useApi } from '../../hooks/useApi';
 import { useI18n } from '../../i18n';
-import { useAuth } from '../../state/AuthContext';
 import { useTheme } from '../../theme';
 import { confirm } from '../../utils/confirm';
 import { todayISO } from '../../utils/format';
 
 const ONBOARDING_REMEDIES = 'onboarding:remedies'; // primed by the goals step
 
-/** Onboarding step 3: review the suggested remedies, edit or remove any, then enter the app. */
+/** Onboarding step 3: review the suggested remedies, edit or remove any, then on to preferences. */
 export default function OnboardingRemedies() {
   const th = useTheme();
   const { t } = useI18n();
   const router = useRouter();
-  const { refreshUser } = useAuth();
   const { data, error, loading, refetch } = useApi(ONBOARDING_REMEDIES, () => remediesApi.list(todayISO()));
-  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
   const remove = async (r) => {
@@ -36,16 +33,9 @@ export default function OnboardingRemedies() {
     }
   };
 
-  const begin = async () => {
-    setBusy(true);
-    setErr(null);
-    try {
-      invalidate('remedies:');
-      await refreshUser(); // needs_onboarding flips to false and the app opens
-    } catch (e) {
-      setErr(e);
-      setBusy(false);
-    }
+  const next = () => {
+    invalidate('remedies:');
+    router.push('/onboarding/preferences');
   };
 
   const groups = data ? [
@@ -81,7 +71,7 @@ export default function OnboardingRemedies() {
         </View>
       ))}
       <ErrorView error={err} style={{ marginTop: 4 }} />
-      <Button title={t('onboarding.begin')} onPress={begin} loading={busy} disabled={!data}
+      <Button title={t('onboarding.remediesCta')} onPress={next} disabled={!data}
         style={{ marginTop: 10, paddingVertical: 16 }} />
       <Row style={{ justifyContent: 'center', marginTop: 14 }}>
         <Pressable onPress={() => router.back()} hitSlop={8}>

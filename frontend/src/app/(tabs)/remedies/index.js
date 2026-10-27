@@ -13,6 +13,7 @@ import { brand } from '../../../config/env';
 import { invalidate, updateCached } from '../../../hooks/useApi';
 import { useAccount, useRemedies, useRemedyHistory } from '../../../hooks/data';
 import { useI18n } from '../../../i18n';
+import { requireOnline } from '../../../network';
 import { useTheme } from '../../../theme';
 import { DAY_LETTERS, todayISO } from '../../../utils/format';
 
@@ -133,6 +134,7 @@ export default function Remedies() {
 
   // Mark today's remedy done (free); tapping again undoes it. Editing is Pro.
   const markDone = async (r) => {
+    if (!requireOnline(t)) return;
     const completed = !r.today.completed;
     setToday(r.id, { count: completed ? r.target : 0, completed });
     if (completed) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});

@@ -8,6 +8,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useI18n } from '../i18n';
+import { useOnline } from '../network';
 import { ERROR, useTheme } from '../theme';
 import { errorMessage } from '../utils/format';
 
@@ -76,6 +77,7 @@ export function Screen({ children, refreshing, onRefresh, tabs = true, gutter = 
   const edges = ['left', 'right', ...(top ? ['top'] : []), ...(tabs ? [] : ['bottom'])];
   return (
     <SafeAreaView edges={edges} style={{ flex: 1, backgroundColor: th.c.bg }}>
+      <OfflineBanner />
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: SCREEN_TOP_PAD, paddingBottom: tabs ? 40 : 34 }}
@@ -87,6 +89,18 @@ export function Screen({ children, refreshing, onRefresh, tabs = true, gutter = 
       </ScrollView>
       {footer}
     </SafeAreaView>
+  );
+}
+
+/** Thin strip over every screen while offline: what's shown is saved, and changes are paused. */
+export function OfflineBanner() {
+  const th = useTheme();
+  const { t } = useI18n();
+  if (useOnline()) return null;
+  return (
+    <View style={{ backgroundColor: th.kind.neutral.tint, paddingVertical: 7, paddingHorizontal: 16 }}>
+      <T v="caption" style={{ textAlign: 'center' }}>{t('offline.banner')}</T>
+    </View>
   );
 }
 

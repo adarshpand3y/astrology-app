@@ -1,5 +1,5 @@
 // "Planets right now" on Home: a table of every graha (sign, house, degree, nakshatra) with
-// Retro / Combust / Exalted / Debilitated badges and filters. Tapping a graha in one of those
+// Retro / Combust / Exalted / Debilitated / Gandmool badges and filters. Tapping a graha in one of those
 // conditions opens what to do and what to avoid while it lasts.
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -21,7 +21,7 @@ const ordinal = (n) => {
   return `${n}${s}`;
 };
 // Badge / pill tones per condition (the design: retro amber, combust red, exalted green, debilitated grey).
-const TONE = { retrograde: 'neutral', combust: 'bad', exalted: 'good', debilitated: null };
+const TONE = { retrograde: 'neutral', combust: 'bad', exalted: 'good', debilitated: null, gandmool: 'neutral' };
 
 function Badge({ label, tone, size = 9.5 }) {
   const th = useTheme();
@@ -75,6 +75,7 @@ export function SkyNow({ sky }) {
     all: sky.planets.length,
     retrograde: sky.planets.filter((p) => p.retrograde).length,
     combust: sky.planets.filter((p) => p.combust).length,
+    gandmool: sky.planets.filter((p) => p.gandmool).length,
   };
   const rows = filter === 'all' ? sky.planets : sky.planets.filter((p) => p[filter]);
   const ref = sky.reference;
@@ -106,6 +107,7 @@ export function SkyNow({ sky }) {
           {pill('all', t('home.skyAll', { n: counts.all }))}
           {pill('retrograde', t('home.skyRetroFilter', { n: counts.retrograde }))}
           {pill('combust', t('home.skyCombustFilter', { n: counts.combust }))}
+          {pill('gandmool', t('home.skyGandmoolFilter', { n: counts.gandmool }))}
         </Row>
 
         {rows.map((p, i) => {
@@ -134,6 +136,7 @@ export function SkyNow({ sky }) {
                     {p.combust ? <Badge tone="bad" label={t('home.skyCombust')} /> : null}
                     {p.dignity === 'exalted' ? <Badge tone="good" label={t('home.skyExalted')} /> : null}
                     {p.dignity === 'debilitated' ? <Badge tone={null} label={t('home.skyDebilitated')} /> : null}
+                    {p.gandmool ? <Badge tone="neutral" label={t('home.skyGandmool')} /> : null}
                   </Row>
                   <Text style={[th.font.ui(400), { fontSize: 11.5, color: th.c.ink2, marginTop: 2 }]}>
                     {signLine} <Text style={{ color: th.c.ink3 }}>· {house}</Text>
@@ -144,7 +147,7 @@ export function SkyNow({ sky }) {
                   <T v="tiny" style={{ fontSize: 10, marginTop: 1 }}>{tr('nakshatra', p.nakshatra)} · {t('home.skyPada', { n: p.pada })}</T>
                 </View>
                 <Text style={{
-                  width: 16, textAlign: 'center', fontSize: 15, color: th.c.ink2, transform: [{ rotate: isOpen ? '180deg' : '0deg' }],
+                  width: 22, textAlign: 'center', fontSize: 22, lineHeight: 24, color: th.c.ink2, transform: [{ rotate: isOpen ? '180deg' : '0deg' }],
                 }}>{has ? '▾' : ''}</Text>
               </Pressable>
               {isOpen ? (

@@ -41,7 +41,7 @@ export default {
     nextPeriod: 'Next · {name} {t}', viewTimeline: 'View full timeline',
     skyTitle: 'Planets right now', skyAll: 'All {n}', skyRetroFilter: '(R) Retrograde · {n}',
     skyCombustFilter: '(C) Combust · {n}', skyRetro: '(R) Retro', skyCombust: '(C) Combust', skyExalted: 'Exalted',
-    skyDebilitated: 'Debilitated', skyHouse: '{n} house', skyPada: 'pada {n}', skyUntil: 'until {d}', skyDo: 'DO', skyAvoid: 'AVOID',
+    skyDebilitated: 'Debilitated', skyGandmool: 'Gandmool', skyGandmoolFilter: 'Gandmool · {n}', skyHouse: '{n} house', skyPada: 'pada {n}', skyUntil: 'until {d}', skyDo: 'DO', skyAvoid: 'AVOID',
     skyFootLagna: 'Sidereal · {ayanamsa} ayanamsa · houses from your {sign} lagna. Combust = too close to the Sun to act at full strength.',
     skyFootMoon: 'Sidereal · {ayanamsa} ayanamsa · houses from your Moon sign ({sign}), as your birth time is unknown. Combust = too close to the Sun to act at full strength.',
     noProfileTitle: 'Add your birth details', noProfileSub: 'Your daily guidance is read from your chart.',
@@ -139,8 +139,17 @@ export default {
     heatNone: '{date} · nothing due', heatTap: 'Tap a day to see what you did', heatSwipe: 'Swipe right for older history',
     activeDays: 'active days', completions: 'remedies done', bestStreak: 'best streak',
   },
+  offline: {
+    title: "You're offline", banner: "You're offline · showing saved data",
+    readOnly: 'Changes need an internet connection. Everything you saved is still here to read.',
+  },
+  update: {
+    title: 'Time to update', sub: 'This version of {app} is no longer supported. Update to the latest version to keep going.',
+    cta: 'Update on {store}', playStore: 'Google Play', appStore: 'the App Store',
+    version: 'You have version {v}.', versions: 'You have version {v}; {min} or newer is needed.',
+  },
   onboarding: {
-    step: 'Step {n} of 3', signOut: 'Use a different account',
+    step: 'Step {n} of 4', signOut: 'Use a different account',
     profileTitle: 'Your birth details',
     profileSub: 'Your chart is cast once, from the moment you were born. Everything {app} shows flows from it.',
     profileCta: 'Cast my chart',
@@ -151,6 +160,10 @@ export default {
     remediesTitle: 'Your remedies',
     remediesSub: 'Suggested for your goals. Edit anything to fit your routine, or remove what doesn’t suit you.',
     remediesSubFree: 'Suggested for your goals. Remove what doesn’t suit you — with Pro you can also edit them.',
+    remediesCta: 'Next: your preferences',
+    prefsTitle: 'Make it yours',
+    prefsSub: 'Choose how {app} looks and which alerts it sends you.',
+    prefsAlerts: 'Notifications', prefsLater: 'You can change any of this later in Settings and Alerts.',
     begin: 'Begin my practice',
   },
   goals: {

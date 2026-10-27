@@ -25,7 +25,7 @@ class ApiError extends Error {
 async function tryRefresh() {
   if (!auth.refresh) return false;
   const r = await fetch(`${API}/auth/token/refresh/`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json", "X-App-Platform": "web" },
     body: JSON.stringify({ refresh: auth.refresh }),
   });
   if (!r.ok) return false;
@@ -36,7 +36,7 @@ async function tryRefresh() {
 async function api(path, { method = "GET", body, query, retry = true } = {}) {
   let url = `${API}${path}`;
   if (query) url += "?" + new URLSearchParams(query).toString();
-  const headers = { "Accept": "application/json" };
+  const headers = { "Accept": "application/json", "X-App-Platform": "web" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (auth.access) headers["Authorization"] = `Bearer ${auth.access}`;
   const r = await fetch(url, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });

@@ -246,3 +246,22 @@ def test_sky_guides_cover_every_condition():
                 assert g and g["note"] and len(g["do"]) >= 2 and len(g["avoid"]) >= 2, (planet, cond, lang)
     assert guide("Su", "retrograde", 1, "en") is None  # the Sun never retrogrades
     assert "10th" in guide("Me", "retrograde", 10, "en")["note"]
+
+
+def test_gandmool_guide_names_the_nakshatra_and_its_lord():
+    from apps.vedic.content.sky import guide
+    from apps.vedic.engine.constants import GANDMOOL_NAKSHATRAS, NAKSHATRAS
+
+    assert sorted(NAKSHATRAS[i] for i in GANDMOOL_NAKSHATRAS) == [
+        "Ashlesha", "Ashwini", "Jyeshtha", "Magha", "Mula", "Revati"]
+    for planet in ("Su", "Mo", "Ma", "Me", "Ju", "Ve", "Sa", "Ra", "Ke"):
+        for nak in GANDMOOL_NAKSHATRAS:
+            for lang in ("en", "hi"):
+                g = guide(planet, "gandmool", 4, lang, nakshatra=nak)
+                assert g["note"] and len(g["do"]) >= 2 and len(g["avoid"]) >= 2
+                assert "{" not in g["note"] + "".join(g["do"] + g["avoid"])
+    moon = guide("Mo", "gandmool", 7, "en", nakshatra=8)  # Ashlesha, ruled by Budh
+    assert "Ashlesha" in moon["note"] and "7th" in moon["note"]
+    assert "Pray to Vishnu" in moon["do"] and "Chant the Budh beej mantra" in moon["do"]
+    assert "Pray to Ganesha" in guide("Sa", "gandmool", 1, "en", nakshatra=18)["do"]  # Mula, ruled by Ketu
+    assert guide("Mo", "gandmool", 1, "en") is None  # needs the nakshatra

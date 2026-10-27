@@ -45,3 +45,40 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f"{self.user} · {self.plan}"
+
+
+class RazorpayPayment(models.Model):
+    """One captured Razorpay payment from the website; grants `days` of Pro to the account with `email`.
+
+    Kept even when no account matches yet (applied once that email is verified) and when the amount
+    matches no plan (days = 0, for a manual look in the admin)."""
+
+    payment_id = models.CharField(max_length=40, unique=True)
+    email = models.EmailField()
+    amount = models.PositiveIntegerField(help_text="In paise.")
+    currency = models.CharField(max_length=3)
+    days = models.PositiveIntegerField(help_text="Pro days this payment buys (0 = amount matched no plan).")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                             related_name="razorpay_payments")
+    applied_at = models.DateTimeField(null=True, blank=True)
+    refunded_at = models.DateTimeField(null=True, blank=True)
+    payload = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.payment_id} · {self.email} · {self.days}d"
+
+
+class PremiumEmailState(models.Model):
+    """Where a free user is in the "unlock Pro on the website" email sequence."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="premium_emails")
+    steps_sent = models.JSONField(default=list, blank=True, help_text="Day offsets already sent (or skipped).")
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user} · sent {self.steps_sent}"

@@ -153,6 +153,7 @@ export function initials(name) {
 export function errorMessage(err, t) {
   if (!err) return '';
   if (err.code === 'network_error') return t('common.networkError');
+  if (err.code === 'offline') return t('offline.readOnly');
   if (err.code === 'timeout') return t('common.timeoutError');
   return err.message || t('common.unknownError');
 }

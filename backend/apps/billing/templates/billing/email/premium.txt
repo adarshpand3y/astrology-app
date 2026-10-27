@@ -1,0 +1,12 @@
+{% autoescape off %}{{ heading }}
+
+{{ intro }}
+
+{% for f in features %}  * {{ f }}
+{% endfor %}
+{{ cta }}: {{ url }}
+
+You're getting this because you created a {{ app_name }} account. Unsubscribe: {{ unsubscribe }}
+
+{{ app_name }} · {{ tagline }}
+{% endautoescape %}

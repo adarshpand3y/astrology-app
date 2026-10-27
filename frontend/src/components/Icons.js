@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 /** Remedy kind → icon. */
 const REMEDY_ICONS = {
-  mantra: 'om', fast: 'food-off-outline', charity: 'hand-heart-outline', gem: 'diamond-stone',
+  mantra: 'om', fast: 'food-off-outline', charity: 'hand-heart-outline', gem: 'diamond-stone', seva: 'cow',
   custom: 'star-four-points-outline',
 };
 

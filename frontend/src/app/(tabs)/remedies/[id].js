@@ -10,6 +10,7 @@ import { BackLink, Button, Card, ErrorView, Loading, Row, Screen, T, TextLink } 
 import { useRemedies } from '../../../hooks/data';
 import { invalidate, setCached, useApi } from '../../../hooks/useApi';
 import { useI18n } from '../../../i18n';
+import { requireOnline } from '../../../network';
 import { useTheme } from '../../../theme';
 import { DAY_LETTERS, todayISO } from '../../../utils/format';
 
@@ -61,13 +62,14 @@ export default function RemedyDetail() {
   };
 
   const tap = async () => {
-    if (data.today.completed) return;
+    if (data.today.completed || !requireOnline(t)) return;
     Haptics.selectionAsync().catch(() => {});
     setCached(key, { ...data, today: { ...data.today, count: data.today.count + 1 } });
     await send({ increment: 1 });
   };
 
   const complete = async () => {
+    if (!requireOnline(t)) return;
     setBusy(true);
     await send({ completed: true });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
