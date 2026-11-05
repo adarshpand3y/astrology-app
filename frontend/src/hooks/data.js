@@ -37,6 +37,12 @@ export function usePanchang(date) {
   return useApi(`panchang:${profileId}:${placeId}:${date}:${lang}`, () => dailyApi.panchang({ date }));
 }
 
+export function useVratCalendar(month) {
+  const { placeId, profileId } = useAccount();
+  const { lang } = useI18n();
+  return useApi(`calendar:${profileId}:${placeId}:${month}:${lang}`, () => dailyApi.calendar(month));
+}
+
 export const useProfiles = () => useApi('profiles', () => profilesApi.list());
 export const useChart = (id) => useApi(id ? `p:${id}:chart` : null, () => vedicApi.chart(id));
 /** One divisional chart, for when the cached chart doesn't include it (pass skip=true otherwise). */

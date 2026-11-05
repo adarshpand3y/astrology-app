@@ -8,6 +8,7 @@ import { Heatmap, MiniHeatmap } from '../../../components/charts/Heatmap';
 import { MoodPractice } from '../../../components/charts/MoodPractice';
 import { MoodCheckIn } from '../../../components/MoodCheckIn';
 import { DoneButton, EditButton, RemedyCard } from '../../../components/RemedyCard';
+import { ProIcon } from '../../../components/Icons';
 import { Card, Empty, ErrorView, GradientPanel, Loading, Row, Screen, Seg, T } from '../../../components/ui';
 import { brand } from '../../../config/env';
 import { invalidate, updateCached } from '../../../hooks/useApi';
@@ -195,7 +196,7 @@ export default function Remedies() {
         }}>
           <Text style={{ fontSize: 18, color: th.c.ink2 }}>+</Text>
           <T weight={600} style={{ fontSize: 14, color: th.c.ink2 }}>{t('remedies.add')}</T>
-          {data.locked ? <T v="tiny" style={{ color: th.c.accent }}>◆ {t('common.pro')}</T> : null}
+          {data.locked ? <T v="tiny" style={{ color: th.c.accent }}><ProIcon size={11} /> {t('common.pro')}</T> : null}
         </Pressable>
         {data.locked ? <T v="tiny" style={{ textAlign: 'center', marginTop: 10 }}>{t('remedies.lockedSub')}</T> : null}
       </View>

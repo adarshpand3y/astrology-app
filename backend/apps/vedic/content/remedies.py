@@ -1,10 +1,12 @@
 """Remedy catalogue: mantra, fasting, charity and gemstone for each graha."""
 from .common import HINDI, SANSKRIT, WEEKDAY, PLANET_DAY
 
-KINDS = ("mantra", "fast", "charity", "gem")  # per graha; "seva" is chart-wide (see SEVA)
-KIND_GLYPH = {"mantra": "ॐ", "fast": "◐", "charity": "❋", "gem": "◆", "seva": "✿"}
-KIND_LABEL = {"en": {"mantra": "Mantra", "fast": "Fasting", "charity": "Charity", "gem": "Gemstone", "seva": "Seva"},
-              "hi": {"mantra": "मंत्र", "fast": "व्रत", "charity": "दान", "gem": "रत्न", "seva": "सेवा"}}
+KINDS = ("mantra", "fast", "charity", "gem")  # per graha; "seva", "puja" and "element" are chart-wide
+KIND_GLYPH = {"mantra": "ॐ", "fast": "◐", "charity": "❋", "gem": "◆", "seva": "✿", "puja": "✺", "element": "◈"}
+KIND_LABEL = {"en": {"mantra": "Mantra", "fast": "Fasting", "charity": "Charity", "gem": "Gemstone", "seva": "Seva",
+                     "puja": "Puja", "element": "Tattva"},
+              "hi": {"mantra": "मंत्र", "fast": "व्रत", "charity": "दान", "gem": "रत्न", "seva": "सेवा",
+                     "puja": "पूजा", "element": "तत्व"}}
 MANTRA_TARGET = 108
 
 # planet -> mantra (en text, hi text), charity (en, hi), gem (en, hi, finger en, finger hi)
@@ -62,11 +64,82 @@ SEVA = {
 }
 
 
-def remedy(planet: str, kind: str, lang: str) -> dict:
-    """Display data for one remedy (title, cadence, how & why...)."""
+# Gandmool shanti puja for a Chandra born in a Gandmool nakshatra: done once, not daily.
+SHANTI = {
+    "en": {"title": "Gandmool shanti puja", "cadence": "once",
+           "how": "A one-time puja, traditionally done on a day when Chandra returns to your birth nakshatra "
+                  "(about every 27 days). A priest performs it at home or in a temple: Ganesh puja, Navagraha "
+                  "shanti, the nakshatra lord's mantra and a havan. Mark it done once it is complete."},
+    "hi": {"title": "गंडमूल शांति पूजा", "cadence": "एक बार",
+           "how": "एक बार की पूजा, परंपरा से उस दिन जब चंद्र आपके जन्म नक्षत्र में लौटे (लगभग हर 27 दिन)। "
+                  "पुरोहित इसे घर या मंदिर में कराते हैं: गणेश पूजा, नवग्रह शांति, नक्षत्र स्वामी का मंत्र और हवन। "
+                  "पूरी होने पर इसे पूर्ण चिह्नित करें।"},
+}
+
+# The lagna's element (tattva, from SIGN_TATVA) -> a daily practice to connect with it.
+ELEMENTS = ("Fire", "Earth", "Air", "Water")
+ELEMENT_NAME = {"Fire": ("Agni (fire)", "अग्नि"), "Earth": ("Prithvi (earth)", "पृथ्वी"),
+                "Air": ("Vayu (air)", "वायु"), "Water": ("Jal (water)", "जल")}
+ELEMENT = {
+    "Fire": {
+        "en": {"title": "Agni tattva · Surya arghya", "cadence": "daily · at sunrise",
+               "how": "Offer water to the rising Sun from a copper lota, then spend a few minutes facing its light. "
+                      "At dusk, light a ghee deepak. Your lagna is a fire sign: tending a flame keeps your drive "
+                      "warm without letting it burn out."},
+        "hi": {"title": "अग्नि तत्व · सूर्य अर्घ्य", "cadence": "रोज़ · सूर्योदय पर",
+               "how": "तांबे के लोटे से उगते सूर्य को जल अर्पित करें और कुछ मिनट उसके प्रकाश की ओर मुख करें। "
+                      "संध्या को घी का दीपक जलाएँ। आपका लग्न अग्नि राशि है: दीपक की लौ आपके उत्साह को संतुलित रखती है।"},
+    },
+    "Earth": {
+        "en": {"title": "Prithvi tattva · barefoot on the earth", "cadence": "about 15 min · daily",
+               "how": "Walk barefoot on grass or soil for 10–15 minutes, and water or tend a plant (tulsi is "
+                      "traditional). Your lagna is an earth sign: touching the ground keeps you steady and patient."},
+        "hi": {"title": "पृथ्वी तत्व · नंगे पाँव धरती पर", "cadence": "लगभग 15 मिनट · रोज़",
+               "how": "10–15 मिनट घास या मिट्टी पर नंगे पाँव चलें और किसी पौधे (परंपरा से तुलसी) को जल दें या "
+                      "उसकी देखभाल करें। आपका लग्न पृथ्वी राशि है: धरती का स्पर्श आपको स्थिर और धैर्यवान रखता है।"},
+    },
+    "Air": {
+        "en": {"title": "Vayu tattva · anulom-vilom", "cadence": "10 min · every morning",
+               "how": "Practise anulom-vilom pranayama (alternate-nostril breathing) for 10 minutes in open air, "
+                      "ideally at sunrise. Your lagna is an air sign: slow, even breath settles a busy mind."},
+        "hi": {"title": "वायु तत्व · अनुलोम-विलोम", "cadence": "10 मिनट · हर सुबह",
+               "how": "खुली हवा में, हो सके तो सूर्योदय पर, 10 मिनट अनुलोम-विलोम प्राणायाम करें। आपका लग्न वायु "
+                      "राशि है: धीमी, सम श्वास चंचल मन को शांत करती है।"},
+    },
+    "Water": {
+        "en": {"title": "Jal tattva · water to tulsi", "cadence": "daily · in the morning",
+               "how": "Offer water to a tulsi or peepal in the morning, and drink water kept overnight in a "
+                      "copper vessel. Your lagna is a water sign: these small rituals keep your feelings flowing "
+                      "and clear."},
+        "hi": {"title": "जल तत्व · तुलसी को जल", "cadence": "रोज़ · सुबह",
+               "how": "सुबह तुलसी या पीपल को जल अर्पित करें और रात भर तांबे के पात्र में रखा जल पिएँ। आपका लग्न जल "
+                      "राशि है: ये छोटे नियम भावनाओं को निर्मल और प्रवाहित रखते हैं।"},
+    },
+}
+# No birth time, so no lagna: shown only until the next sync retires the remedy.
+ELEMENT_UNKNOWN = {
+    "en": {"title": "Lagna tattva", "cadence": "daily",
+           "how": "Add your birth time to see the practice for your lagna's element."},
+    "hi": {"title": "लग्न तत्व", "cadence": "रोज़", "how": "अपने लग्न के तत्व का अभ्यास देखने के लिए जन्म समय जोड़ें।"},
+}
+
+
+def element_name(element: str | None, lang: str) -> str:
+    return ELEMENT_NAME[element][1 if lang == "hi" else 0] if element in ELEMENT_NAME else ""
+
+
+def remedy(planet: str, kind: str, lang: str, element: str | None = None) -> dict:
+    """Display data for one remedy (title, cadence, how & why...). `element` is the lagna's tattva,
+    for the "element" kind."""
     hi = lang == "hi"
+    lk = "hi" if hi else "en"
     if kind == "seva":
-        return {**SEVA["hi" if hi else "en"], "text": "", "target": 1, "weekday": None}
+        return {**SEVA[lk], "text": "", "target": 1, "weekday": None}
+    if kind == "puja":
+        return {**SHANTI[lk], "text": "", "target": 1, "weekday": None, "once": True}
+    if kind == "element":
+        return {**(ELEMENT[element][lk] if element in ELEMENT else ELEMENT_UNKNOWN[lk]),
+                "text": "", "target": 1, "weekday": None}
     d = _DATA[planet]
     day = WEEKDAY[lang][PLANET_DAY[planet]]
     name = HINDI[planet] if hi else SANSKRIT[planet]
@@ -115,11 +188,12 @@ BASIS = {
     "moon": ("Chandra", "चंद्र", "For your Moon (Chandra)", "आपके चंद्रमा के लिए"),
     "mahadasha": ("Mahadasha", "महादशा", "For your Mahadasha lord", "आपकी महादशा के स्वामी के लिए"),
     "antardasha": ("Antardasha", "अंतर्दशा", "For your Antardasha lord", "आपकी अंतर्दशा के स्वामी के लिए"),
-    "gandmool": ("Gandmool", "गंडमूल",
-                 "For your Moon, born in a Gandmool nakshatra (a one-time Gandmool shanti puja is also traditional)",
-                 "गंडमूल नक्षत्र में जन्मे आपके चंद्र के लिए (एक बार गंडमूल शांति पूजा भी परंपरा है)"),
+    "gandmool": ("Gandmool", "गंडमूल", "For your Moon, born in a Gandmool nakshatra",
+                 "गंडमूल नक्षत्र में जन्मे आपके चंद्र के लिए"),
     "gandmool_birth": ("Gandmool", "गंडमूल", "For grahas born in Gandmool nakshatras: {planets}",
                        "जन्म के समय गंडमूल नक्षत्र में ग्रहों के लिए: {planets}"),
+    "lagna_element": ("Lagna tattva", "लग्न तत्व", "For your lagna's element: {element}",
+                      "आपके लग्न के तत्व के लिए: {element}"),
 }
 
 
@@ -128,9 +202,10 @@ def basis_short(reasons: list[str], lang: str) -> str:
     return BASIS[reasons[0]][1 if lang == "hi" else 0] if reasons and reasons[0] in BASIS else ""
 
 
-def basis_label(reasons: list[str], lang: str, planets: list[str] = ()) -> str:
+def basis_label(reasons: list[str], lang: str, planets: list[str] = (), element: str | None = None) -> str:
     """All reasons, e.g. "For your Mahadasha lord · For your lagna lord". `planets` fills the grahas a
-    "gandmool_birth" reason is for."""
+    "gandmool_birth" reason is for, `element` the tattva of a "lagna_element" one."""
     hi = lang == "hi"
     names = ", ".join((HINDI if hi else SANSKRIT)[p] for p in planets)
-    return " · ".join(BASIS[r][3 if hi else 2].format(planets=names) for r in reasons if r in BASIS)
+    return " · ".join(BASIS[r][3 if hi else 2].format(planets=names, element=element_name(element, lang))
+                      for r in reasons if r in BASIS)

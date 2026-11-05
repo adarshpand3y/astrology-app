@@ -13,7 +13,7 @@ module.exports = {
   taglineHi: 'वैदिक दैनिक साथी',
   slug: 'guru-drishti',
   scheme: 'gurudrishti',
-  version: '1.0.0',
+  version: '1.1.0',
   iosBundleIdentifier: 'com.gurudrishti.app',
   androidPackage: 'com.gurudrishti.app',
   owner: undefined, // EAS account owner, if any
@@ -66,6 +66,7 @@ module.exports = {
   features: {
     decisionAssistant: true,
     panchang: true,
+    vratCalendar: true,     // Ekadashi & festival month calendar (Timeline tab)
     remedies: true,
     journal: true,
     alerts: true,

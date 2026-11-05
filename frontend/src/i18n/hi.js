@@ -34,6 +34,7 @@ export default {
   tabs: { home: 'होम', timeline: 'समय-रेखा', chart: 'कुंडली', remedies: 'उपाय', profile: 'प्रोफ़ाइल' },
   home: {
     morning: 'सुप्रभात', afternoon: 'नमस्कार', evening: 'शुभ संध्या',
+    festivals: 'त्योहार', festivalCalendar: 'कैलेंडर',
     insight: 'आज की अंतर्दृष्टि', why: 'ऐसा क्यों?', currentPeriod: 'वर्तमान दशा', dashaSub: '{a}–{b} · दशा',
     remaining: '{d} शेष', liveTransit: 'वर्तमान गोचर', peaks: 'लगभग {time} पर चरम',
     todaysWindows: 'आज के मुहूर्त', fullTimeline: 'पूरी समय-रेखा →',
@@ -48,7 +49,7 @@ export default {
     noLocationTitle: 'आप कहाँ रहते हैं?', noLocationSub: 'दैनिक समय आपके वर्तमान शहर के अनुसार होते हैं।',
   },
   timeline: {
-    title: 'दिन की समय-रेखा', segTimeline: 'समय-रेखा', segDecision: 'शुभ समय', segPanchang: 'पंचांग',
+    title: 'दिन की समय-रेखा', segTimeline: 'समय-रेखा', segDecision: 'शुभ समय', segPanchang: 'पंचांग', segCalendar: 'त्योहार',
     meta: '{date} · {city} · सूर्योदय {sr} · सूर्यास्त {ss}', nowLabel: 'अभी', night: 'रात्रि',
   },
   decision: {
@@ -57,6 +58,13 @@ export default {
     empty: 'इस अवधि में कोई अवसर शेष नहीं — लंबी अवधि चुनें।',
     activities: { travel: 'यात्रा', purchase: 'ख़रीद', contract: 'अनुबंध', venture: 'नया उपक्रम', medical: 'चिकित्सा' },
     ranges: { today: 'आज', week: 'अगले 7 दिन', month: 'इस महीने' },
+  },
+  calendar: {
+    title: 'त्योहार', thisMonth: 'इस महीने', fast: 'व्रत', none: 'इस महीने कोई एकादशी या त्योहार नहीं।',
+    noneDay: 'इस दिन कोई एकादशी या त्योहार नहीं। क्या करें, यह देखने के लिए चिह्नित दिन पर टैप करें।', tithi: '{paksha} {tithi}', whatToDo: 'क्या करें',
+    comingUp: 'आगामी', today: 'आज', tomorrow: 'कल', inDays: '{n} दिन में',
+    showEarlier: 'इस महीने के पिछले {n} देखें', hideEarlier: 'पिछले छिपाएँ',
+    note: 'तिथियाँ आपके स्थान पर सूर्योदय (कुछ के लिए मध्याह्न, सूर्यास्त, मध्यरात्रि या चंद्रोदय) की तिथि से तय होती हैं। स्थानीय परंपरा में एक दिन का अंतर हो सकता है।',
   },
   panchang: {
     title: 'पंचांग', shaka: 'शक {y} · {month}', rises: 'उदय {t}', until: '{t} तक', adhika: 'अधिक',
@@ -120,6 +128,7 @@ export default {
     title: 'उपाय', sub: 'आपके दशा स्वामी {planet} को स्थिर करने के छोटे, नियमित उपाय।', streak: 'वर्तमान क्रम',
     days: 'दिन', best: 'सर्वश्रेष्ठ: {n} दिन', howWhy: 'कैसे और क्यों', ofToday: 'आज {n} में से', tapCount: 'गिनने के लिए वृत्त पर टैप करें',
     markDone: 'आज पूरा हुआ', markDoneShort: 'पूरा हुआ', doneToday: 'आज पूरा ✓', notDue: 'आज नियत नहीं',
+    doneOn: '{date} को पूरा', doneOnce: 'पूरा ✓ (एक बार)',
     reminder: 'रिमाइंडर', reminderSub: 'जिन दिनों यह नियत हो, मुझे याद दिलाएँ',
     subGoals: '{goals} के लिए छोटे, नियमित उपाय।',
     fromChart: 'आपकी कुंडली से', tabToday: 'आज', tabProgress: 'प्रगति', streakLine: '{n} दिन का क्रम', bestDays: 'सर्वश्रेष्ठ {n} दिन', seeProgress: 'प्रगति देखें ›', last3Months: 'पिछले 3 महीने',
@@ -146,7 +155,7 @@ export default {
   update: {
     title: 'अपडेट का समय', sub: '{app} का यह संस्करण अब समर्थित नहीं है। आगे बढ़ने के लिए नया संस्करण इंस्टॉल करें।',
     cta: '{store} पर अपडेट करें', playStore: 'Google Play', appStore: 'App Store',
-    version: 'आपका संस्करण {v} है।', versions: 'आपका संस्करण {v} है; {min} या नया चाहिए।',
+    version: 'आपका संस्करण {v} है।', exit: 'बाहर निकलें',
   },
   onboarding: {
     step: 'चरण {n} / 4', signOut: 'दूसरे खाते से जाएँ',
@@ -184,9 +193,14 @@ export default {
     day: '{date} · {mood} · {due} में से {done} उपाय', dayNoDue: '{date} · {mood} · कोई उपाय नियत नहीं',
   },
   profiles: {
-    title: 'आपकी कुंडलियाँ', sub: 'चुनें कि {app} किसका आकाश पढ़े। परिवार और मित्रों की जानकारी केवल आपके पास रहती है।',
+    title: 'आपकी कुंडलियाँ', sub: 'किसका आकाश {app} पढ़े, यह बदलने के लिए कुंडली पर टैप करें; संपादित करने या हटाने के लिए देर तक दबाएँ।',
+    subEmpty: 'जन्म विवरण जोड़ें और चुनें कि {app} किसका आकाश पढ़े।',
     add: 'जन्म विवरण जोड़ें', you: 'आप', editHint: 'संपादित करने या हटाने के लिए कुंडली को देर तक दबाएँ।',
     deleteConfirm: '{name} की कुंडली हटाएँ?', yourSpace: 'आपका स्थान',
+    deleteSub: 'इसकी सहेजी गई गणनाएँ भी हट जाएँगी। इसे वापस नहीं लिया जा सकता।',
+    deleteActiveSub: '{app} अभी यही कुंडली पढ़ रहा है और दूसरी पर चला जाएगा। इसे वापस नहीं लिया जा सकता।',
+    noTime: 'समय अज्ञात', use: 'यह कुंडली चुनें', useSub: 'इस व्यक्ति का आकाश पढ़ें',
+    editAction: 'जन्म विवरण संपादित करें', editSub: 'नाम, तिथि, समय और स्थान', deleteAction: 'कुंडली हटाएँ',
     alerts: 'सूचनाएँ', settings: 'सेटिंग्स', pro: '{app} प्रो', proActive: 'प्रो सक्रिय है', trialEnds: 'ट्रायल {date} को समाप्त',
   },
   relation: { self: 'आप', family: 'परिवार', friend: 'मित्र', client: 'ग्राहक', other: 'अन्य' },
@@ -199,6 +213,7 @@ export default {
     daily: 'दैनिक अंतर्दृष्टि', dailySub: '{t} बजे',
     periods: 'समय काल', periodsSub: 'सूर्योदय से सूर्यास्त तक, हर चौघड़िया से 15 मिनट पहले',
     remedies: 'उपाय रिमाइंडर', remediesSub: 'आज के उपाय, {t} बजे',
+    vrat: 'एकादशी व त्योहार', vratSub: 'हर एकादशी और त्योहार से पहले की शाम',
     periods_night: 'रात्रि के समय काल', periods_nightSub: 'सूर्यास्त से सूर्योदय तक, 15 मिनट पहले, बिना आवाज़ के',
     unsupported: 'Android पर Expo Go सूचनाएँ नहीं भेज सकता। आपकी पसंद सहेज ली गई है और इंस्टॉल किए गए ऐप में काम करेगी।',
     exactTitle: 'समय पर सूचनाएँ पाएँ',

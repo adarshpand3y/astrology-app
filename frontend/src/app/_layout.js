@@ -67,8 +67,6 @@ function RootNavigator() {
   }, [booting, status, t]);
 
   if (booting) return null;
-  // The server refuses this build: nothing else works until the user updates from the store.
-  if (update) return <><StatusBar style={theme.dark ? 'light' : 'dark'} /><UpdateRequired minVersion={update.minVersion} /></>;
   const signedIn = status === 'signedIn';
   // New accounts finish onboarding (birth profile, then goals) before reaching the app.
   // `user` can be null after an offline launch; let those users into the app.
@@ -92,6 +90,8 @@ function RootNavigator() {
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
       </Stack>
+      {/* The server refuses this build: a blocking dialog over the app until the user updates. */}
+      {update ? <UpdateRequired /> : null}
     </>
   );
 }

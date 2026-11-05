@@ -7,7 +7,7 @@ import { useTheme } from '../theme';
 import { addDays, shortDate, todayISO } from '../utils/format';
 import { Row, Seg } from './ui';
 
-/** Switch between the three Timeline-tab screens. */
+/** Switch between the Timeline-tab screens. */
 export function TimelineNav({ current }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -15,6 +15,7 @@ export function TimelineNav({ current }) {
     { value: 'index', label: t('timeline.segTimeline') },
     brand.features.decisionAssistant && { value: 'decision', label: t('timeline.segDecision') },
     brand.features.panchang && { value: 'panchang', label: t('timeline.segPanchang') },
+    brand.features.vratCalendar && { value: 'calendar', label: t('timeline.segCalendar') },
   ].filter(Boolean);
   return (
     <Seg

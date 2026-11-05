@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.billing.services import require_pro
+from apps.core.exceptions import ServiceError
 from apps.core.throttles import ComputeRateThrottle
 from apps.vedic.content.activities import ACTIVITIES, RANGES
 from apps.vedic.services import _run
@@ -71,3 +72,25 @@ class TransitsView(_DailyView):
     def get(self, request):
         ctx = resolve(request)
         return Response(_run(lambda: services.transits(ctx)))
+
+
+class CalendarView(_DailyView):
+    @extend_schema(parameters=[OpenApiParameter("month", str, description="YYYY-MM. Default: this month"),
+                               *DAY_PARAMS[1:]],
+                   responses={200: OpenApiTypes.OBJECT},
+                   summary="Festival calendar: tithi at each sunrise, Ekadashis and festivals with what to do, for a month")
+    def get(self, request):
+        ctx = resolve(request, profile_required=False)
+        raw = request.query_params.get("month")
+        year, month = ctx.day.year, ctx.day.month
+        if raw:
+            try:
+                year, month = (int(x) for x in raw.split("-"))
+                if not 1 <= month <= 12:
+                    raise ValueError
+            except ValueError as exc:
+                raise ServiceError("Invalid month; use YYYY-MM.", code="invalid_month") from exc
+        if abs((year - ctx.day.year) * 12 + month - ctx.day.month) > services.CALENDAR_MONTHS:
+            raise ServiceError(f"The calendar covers {services.CALENDAR_MONTHS} months either way.",
+                               code="month_out_of_range")
+        return Response(_run(lambda: services.calendar(ctx, year, month)))

@@ -8,6 +8,7 @@ import { LocationPicker } from '../../components/LocationPicker';
 import { OnboardingScreen } from '../../components/Onboarding';
 import { Button, Checkbox, ErrorView, Field, Row, T } from '../../components/ui';
 import { brand } from '../../config/env';
+import { invalidate } from '../../hooks/useApi';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../state/AuthContext';
 import { useTheme } from '../../theme';
@@ -52,6 +53,8 @@ export default function OnboardingProfile() {
           node_mode: brand.defaults.nodeMode, ayanamsa: brand.defaults.ayanamsa,
         });
         setCreated(true); // don't create a second chart if saving the place fails and the user retries
+        // A saved (possibly empty) chart list from before, e.g. after deleting the last chart, is out of date.
+        invalidate('profiles');
       }
       // The first chart becomes the active one; this also refreshes the user.
       await updateMe({ full_name: name.trim(), current_place_id: livePlace.id });

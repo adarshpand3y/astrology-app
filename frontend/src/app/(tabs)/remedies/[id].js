@@ -5,7 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { remediesApi } from '../../../api/endpoints';
-import { RemedyIcon } from '../../../components/Icons';
+import { ProIcon, RemedyIcon } from '../../../components/Icons';
 import { BackLink, Button, Card, ErrorView, Loading, Row, Screen, T, TextLink } from '../../../components/ui';
 import { useRemedies } from '../../../hooks/data';
 import { invalidate, setCached, useApi } from '../../../hooks/useApi';
@@ -81,13 +81,13 @@ export default function RemedyDetail() {
     <Screen>
       <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <BackLink label={t('remedies.title')} />
-        <TextLink title={locked ? `◆ ${t('remedies.edit')}` : t('remedies.edit')}
+        <TextLink title={locked ? <><ProIcon size={13} />{` ${t('remedies.edit')}`}</> : t('remedies.edit')}
           onPress={() => router.push(locked ? '/paywall' : `/remedies/edit/${id}`)} />
       </Row>
       <View style={{ alignItems: 'center' }}>
         {isCounter ? <Ring value={data.today.count} target={data.target} onPress={tap} /> : (
           <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: th.soft(0.15), alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <RemedyIcon kind={data.kind} size={44} color={th.c.accent} />
+            <RemedyIcon kind={data.kind} element={data.element} size={44} color={th.c.accent} />
           </View>
         )}
         <Text style={[th.font.display(400), { fontSize: 22, color: th.c.ink, textAlign: 'center' }]}>{data.title}</Text>
@@ -105,7 +105,7 @@ export default function RemedyDetail() {
         </Card>
       ) : null}
 
-      <Row gap={6} style={{ marginTop: 16 }}>
+      {data.once ? null : <Row gap={6} style={{ marginTop: 16 }}>
         {data.week.map((d, i) => (
           <View key={d.date} style={{
             flex: 1, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center',
@@ -114,10 +114,11 @@ export default function RemedyDetail() {
             <Text style={[th.font.ui(600), { fontSize: 11, color: d.done ? th.c.onAccent : th.c.ink3 }]}>{DAY_LETTERS[lang][i]}</Text>
           </View>
         ))}
-      </Row>
+      </Row>}
       <ErrorView error={err} style={{ marginTop: 12 }} />
       <Button
-        title={data.today.completed ? t('remedies.doneToday') : data.due_today ? t('remedies.markDone') : t('remedies.notDue')}
+        title={data.today.completed ? t('remedies.doneToday') : data.due_today ? t('remedies.markDone')
+          : data.done_on ? t('remedies.doneOnce') : t('remedies.notDue')}
         disabled={data.today.completed || !data.due_today}
         loading={busy}
         onPress={complete}

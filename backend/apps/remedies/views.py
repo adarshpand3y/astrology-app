@@ -40,10 +40,11 @@ def list_payload(request) -> dict:
     today = local_today(request)
     user = request.user
     profile = resolve_profile(request, required=False)
+    dasha = services.current_lords(profile) if profile else None
     services.seed_for(user, profile)
-    services.sync_chart(user, profile)
-    remedies = services.active(user).prefetch_related("logs")
-    focus = services.focus_planets(profile) if profile else []
+    services.refresh_chart(user, profile, dasha)
+    remedies = services.active(user).select_related("user__active_profile").prefetch_related("logs")
+    focus = services.focus_planets(profile, dasha[0]) if profile else []
     return {
         "locked": not is_pro(user),
         "focus": [{"code": p, "glyph": GLYPH[p], "name": short(p, lang)} for p in focus],
@@ -136,6 +137,7 @@ class RemedyDetailView(APIView):
         remedy = self.get_object(request, pk)
         remedy.archived_at = dj_tz.now()
         remedy.save(update_fields=["archived_at"])
+        services.forget_sync(request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

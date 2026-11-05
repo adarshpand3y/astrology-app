@@ -8,12 +8,13 @@ import { SkyNow } from '../../components/SkyNow';
 import {
   Avatar, Bar, Button, Card, Empty, ErrorView, GradientBadge, Loading, Pill, Row, Screen, Sheet, SoftPanel, T, WindowRow,
 } from '../../components/ui';
+import { brand } from '../../config/env';
 import { useAccount, useHome } from '../../hooks/data';
 import { useI18n } from '../../i18n';
 import { GLYPH } from '../../i18n/terms';
 import { useAuth } from '../../state/AuthContext';
 import { useTheme } from '../../theme';
-import { clock, dateLine, duration, initials, range } from '../../utils/format';
+import { clock, dateLine, duration, initials, range, shortDate } from '../../utils/format';
 
 /** Small graha glyph in a tinted circle, as on the Home summary cards. */
 function CardGlyph({ glyph, tone }) {
@@ -39,6 +40,49 @@ function CardFooter({ label }) {
         <Text style={{ fontSize: 13, color: th.c.accent }}>→</Text>
       </Row>
     </>
+  );
+}
+
+/** Today's Ekadashi or festivals, then the next few, each with how soon; opens the festival calendar. */
+function FestivalGlimpse({ festivals }) {
+  const th = useTheme();
+  const { t, lang } = useI18n();
+  const router = useRouter();
+  const soon = (n) => (n === 0 ? t('calendar.today') : n === 1 ? t('calendar.tomorrow') : t('calendar.inDays', { n }));
+  return (
+    <Card radius={18} pad={15} style={{ marginTop: 14 }} onPress={() => router.push('/timeline/calendar')}>
+      <Row style={{ justifyContent: 'space-between', marginBottom: 4 }}>
+        <T v="eyebrow" style={{ fontSize: 9 }}>{t('home.festivals')}</T>
+        <T weight={600} style={{ fontSize: 11.5, color: th.c.accent }}>{t('home.festivalCalendar')} →</T>
+      </Row>
+      {festivals.map((f, i) => {
+        const today = f.days_away === 0;
+        return (
+          <Row key={`${f.date}:${f.key}`} gap={11} align="flex-start" style={{
+            paddingVertical: 9, borderTopWidth: i ? 1 : 0, borderTopColor: th.c.hair,
+          }}>
+            <View style={{
+              width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center',
+              backgroundColor: today ? th.c.accent : th.soft(0.15),
+            }}>
+              <Text style={{ fontSize: 14, color: today ? th.c.onAccent : th.c.accent }}>{f.glyph}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Row gap={7} style={{ flexWrap: 'wrap' }}>
+                <T weight={600} style={{ fontSize: 14 }}>{f.name}</T>
+                <View style={{ paddingVertical: 1, paddingHorizontal: 7, borderRadius: 20, backgroundColor: today ? th.c.accent : th.c.muted }}>
+                  <Text style={[th.font.ui(600), { fontSize: 10, color: today ? th.c.onAccent : th.c.ink2 }]}>{soon(f.days_away)}</Text>
+                </View>
+                {f.fast ? <T v="tiny" style={{ fontSize: 10, color: th.c.accentDark }}>{t('calendar.fast')}</T> : null}
+              </Row>
+              <T v="tiny" numberOfLines={today ? 2 : 1} style={{ fontSize: 11, marginTop: 2, color: th.c.ink2 }}>
+                {today ? f.how : shortDate(f.date, lang)}
+              </T>
+            </View>
+          </Row>
+        );
+      })}
+    </Card>
   );
 }
 
@@ -165,6 +209,9 @@ function HomeContent() {
           </Card>
         ) : null}
       </Row>
+
+      {/* today's and the next festivals */}
+      {brand.features.vratCalendar && data.festivals?.length ? <FestivalGlimpse festivals={data.festivals} /> : null}
 
       {/* every graha now, with retrograde / combust advice */}
       <SkyNow sky={data.sky} />

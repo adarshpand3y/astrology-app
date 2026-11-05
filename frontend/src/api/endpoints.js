@@ -44,6 +44,8 @@ export const dailyApi = {
   home: (query) => api('/daily/home/', { query }),
   timeline: (query) => api('/daily/timeline/', { query }),
   panchang: (query) => api('/daily/panchang/', { query }),
+  /** Vrat & festival calendar for `month` (YYYY-MM). */
+  calendar: (month) => api('/daily/calendar/', { query: { month } }),
   decision: (activity, range) => post('/daily/decision/', { activity, range }, { timeout: 40000 }),
 };
 

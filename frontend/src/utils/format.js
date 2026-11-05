@@ -124,6 +124,25 @@ export const toApiDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${p
 export const toApiTime = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 export const todayISO = () => toApiDate(new Date());
 
+/** "2026-11" + n months. */
+export function addMonths(ym, n) {
+  const [y, m] = ym.split('-').map(Number);
+  const i = y * 12 + (m - 1) + n;
+  return `${Math.floor(i / 12)}-${pad((i % 12) + 1)}`;
+}
+
+/** "November 2026" */
+export function monthLabel(ym, lang = 'en') {
+  const [y, m] = ym.split('-').map(Number);
+  return `${MONTHS_LONG[lang][m - 1]} ${y}`;
+}
+
+/** Whole days from one "YYYY-MM-DD" to another (negative if `b` is earlier). */
+export function daysBetween(a, b) {
+  const utc = (iso) => { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+  return Math.round((utc(b) - utc(a)) / 86400000);
+}
+
 export function addDays(isoDate, n) {
   const [y, m, d] = isoDate.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d + n));

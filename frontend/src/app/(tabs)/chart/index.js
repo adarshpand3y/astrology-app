@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { NorthChart, planetMarks, SouthChart } from '../../../components/charts/Charts';
-import { Icon } from '../../../components/Icons';
+import { Icon, ProIcon } from '../../../components/Icons';
 import { Button, Card, Empty, ErrorView, GlyphDot, Loading, Pill, Row, Screen, Seg, Sheet, T } from '../../../components/ui';
 import { brand } from '../../../config/env';
 import { useAccount, useBilling, useChart, useDashaCurrent, useStrength, useVarga } from '../../../hooks/data';
@@ -105,7 +105,7 @@ export default function Kundali() {
           {MORE.map((code) => (
             <Pill key={code} surface onPress={() => pickVarga(code)}
               style={varga === code ? { borderColor: th.c.accent, backgroundColor: th.soft(0.08) } : null}>
-              <T v="tiny" weight={600} style={{ color: varga === code ? th.c.accentDark : th.c.ink2 }}>{code}{isPro ? '' : ' ◆'}</T>
+              <T v="tiny" weight={600} style={{ color: varga === code ? th.c.accentDark : th.c.ink2 }}>{code}{isPro ? null : <>{' '}<ProIcon size={10} /></>}</T>
             </Pill>
           ))}
         </ScrollView>

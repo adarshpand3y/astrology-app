@@ -7,7 +7,7 @@ from datetime import datetime, time, timedelta
 from apps.billing.services import is_pro
 from apps.remedies import services as rs
 from apps.daily.context import DayContext
-from apps.daily.services import build_insight, natal
+from apps.daily.services import build_insight, natal, observances_between
 from apps.vedic import services as vedic
 from apps.vedic.content.common import HINDI, SANSKRIT, ENGLISH, ordinal, pick
 from apps.vedic.content import remedies as rc
@@ -23,6 +23,8 @@ TRANSIT_PLANETS = ("Ma", "Ju", "Sa", "Ra", "Su")
 # Period alerts come up to 16 a day (8 day + 8 night), and a phone holds ~60 scheduled alerts
 # (iOS caps at 64), so they only cover the next few days; the app re-syncs when it opens.
 PERIOD_DAYS = 3
+# Vrat and festival reminders go out the evening before, in time to plan a fast.
+VRAT_EVE = time(19, 0)
 # Alerts go out this long before the event: Android delivers scheduled notifications a few
 # minutes late unless the app holds the exact-alarm permission, so arrive early instead.
 LEAD = timedelta(minutes=15)
@@ -36,7 +38,7 @@ def prefs_for(user) -> AlertPreference:
 # A mark at the start of each title so the shade reads at a glance: green for a good period,
 # amber for neutral, a warning for a bad one, and a symbol of its own for the rest.
 _KIND_MARK = {"good": "🟢", "neutral": "🟡", "bad": "⚠️"}
-_CATEGORY_MARK = {"rahu": "⛔", "remedy": "🪔", "daily": "✨", "dasha": "🪐", "sade_sati": "🪐"}
+_CATEGORY_MARK = {"rahu": "⛔", "remedy": "🪔", "daily": "✨", "dasha": "🪐", "sade_sati": "🪐", "vrat": "🌕"}
 
 
 def _mark(category: str, kind: str) -> str:
@@ -89,6 +91,20 @@ def _remedy_item(remedies: list, d, prefs, lang: str, tz) -> dict | None:
     return _item("remedy", at, title, ", ".join(due), "good", lead=timedelta(0))
 
 
+def _vrat_items(ctx: DayContext, days: int) -> list[dict]:
+    """One reminder the evening before each day with an Ekadashi or festival, naming all of that day's."""
+    by_day: dict = {}
+    for d, o in observances_between(ctx, ctx.day + timedelta(days=1), ctx.day + timedelta(days=days)):
+        by_day.setdefault(d, []).append(o)
+    items = []
+    for d, obs in by_day.items():
+        names = " · ".join(o["name"] for o in obs)
+        at = datetime.combine(d - timedelta(days=1), VRAT_EVE, tzinfo=ctx.tz)
+        items.append(_item("vrat", at, pick(ctx.lang, f"Tomorrow: {names}", f"कल: {names}"), obs[0]["how"],
+                           "good", lead=timedelta(0)))
+    return items
+
+
 def schedule(ctx: DayContext, days: int) -> list[dict]:
     user, profile, lang, tz = ctx.user, ctx.profile, ctx.lang, ctx.tz
     prefs = prefs_for(user)
@@ -100,7 +116,7 @@ def schedule(ctx: DayContext, days: int) -> list[dict]:
     v = vedic._vimshottari(profile) if profile else None
     # The phone fetches this feed whenever the app opens, so bring the chart remedies up to date
     # here too (a new Antardasha lord's mantra) instead of waiting for a visit to Remedies.
-    rs.sync_chart(user, profile)
+    rs.refresh_chart(user, profile)
     remedies = list(rs.active(user).filter(reminder=True).prefetch_related("logs")) if prefs.remedies else []
 
     for i in range(days):
@@ -127,6 +143,9 @@ def schedule(ctx: DayContext, days: int) -> list[dict]:
             item = _remedy_item(remedies, d, prefs, lang, tz)
             if item:
                 items.append(item)
+
+    if prefs.vrat:
+        items.extend(_vrat_items(ctx, days))
 
     if prefs.dasha and v:
         for p in v.current(now, levels=3)[1:]:

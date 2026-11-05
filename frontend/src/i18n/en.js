@@ -34,6 +34,7 @@ export default {
   tabs: { home: 'Home', timeline: 'Timeline', chart: 'Chart', remedies: 'Remedies', profile: 'Profile' },
   home: {
     morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening',
+    festivals: 'Festivals', festivalCalendar: 'Calendar',
     insight: "Today's insight", why: 'Why this?', currentPeriod: 'Current period', dashaSub: '{a}–{b} · Dasha',
     remaining: '{d} remaining', liveTransit: 'Live transit', peaks: 'Peaks around {time}',
     todaysWindows: "Today's windows", fullTimeline: 'Full timeline →',
@@ -48,7 +49,7 @@ export default {
     noLocationTitle: 'Where do you live?', noLocationSub: 'Daily timings follow your current city.',
   },
   timeline: {
-    title: 'Day timeline', segTimeline: 'Timeline', segDecision: 'Best time', segPanchang: 'Panchang',
+    title: 'Day timeline', segTimeline: 'Timeline', segDecision: 'Best time', segPanchang: 'Panchang', segCalendar: 'Festivals',
     meta: '{date} · {city} · Sunrise {sr} · Sunset {ss}', nowLabel: 'Now', night: 'Night',
   },
   decision: {
@@ -57,6 +58,13 @@ export default {
     empty: 'No openings left in this window — try a longer range.',
     activities: { travel: 'Travel', purchase: 'Purchase', contract: 'Contract', venture: 'New venture', medical: 'Medical' },
     ranges: { today: 'Today', week: 'Next 7 days', month: 'This month' },
+  },
+  calendar: {
+    title: 'Festivals', thisMonth: 'This month', fast: 'Fast', none: 'No Ekadashi or festival this month.',
+    noneDay: 'No Ekadashi or festival on this day. Tap a marked day to see what to do.', tithi: '{paksha} {tithi}', whatToDo: 'What to do',
+    comingUp: 'Coming up', today: 'Today', tomorrow: 'Tomorrow', inDays: 'In {n} days',
+    showEarlier: 'Show {n} earlier this month', hideEarlier: 'Hide earlier ones',
+    note: 'Dates follow the tithi at sunrise (midday, sunset, midnight or moonrise for some) where you live. Local custom can differ by a day.',
   },
   panchang: {
     title: 'Panchang', shaka: 'Shaka {y} · {month}', rises: 'rises {t}', until: 'until {t}', adhika: 'Adhik',
@@ -125,6 +133,7 @@ export default {
     undoA11y: 'Completed today. Tap to undo.',
     days: 'days', best: 'Best: {n} days', howWhy: 'How & why', ofToday: 'of {n} today', tapCount: 'Tap the ring to count',
     markDone: 'Mark today complete', markDoneShort: 'Mark as done', doneToday: 'Done today ✓', notDue: 'Not due today',
+    doneOn: 'done on {date}', doneOnce: 'Done ✓ (one-time)',
     reminder: 'Reminder', reminderSub: 'Notify me on the days this is due',
     lockedTitle: 'More with Pro', lockedSub: 'Editing remedies, reminders and adding your own are part of Pro.',
     add: 'Add your own remedy', edit: 'Edit', remove: 'Remove', edited: 'edited',
@@ -146,7 +155,7 @@ export default {
   update: {
     title: 'Time to update', sub: 'This version of {app} is no longer supported. Update to the latest version to keep going.',
     cta: 'Update on {store}', playStore: 'Google Play', appStore: 'the App Store',
-    version: 'You have version {v}.', versions: 'You have version {v}; {min} or newer is needed.',
+    version: 'You have version {v}.', exit: 'Exit',
   },
   onboarding: {
     step: 'Step {n} of 4', signOut: 'Use a different account',
@@ -184,9 +193,14 @@ export default {
     day: '{date} · {mood} · {done} of {due} remedies', dayNoDue: '{date} · {mood} · no remedies due',
   },
   profiles: {
-    title: 'Charts you follow', sub: 'Switch whose sky {app} reads. Family and friends stay private to you.',
+    title: 'Charts you follow', sub: 'Tap a chart to switch whose sky {app} reads; long-press it to edit or delete.',
+    subEmpty: 'Add a birth profile to choose whose sky {app} reads.',
     add: 'Add a birth profile', you: 'You', editHint: 'Long-press a chart to edit or delete it.',
     deleteConfirm: 'Delete the chart of {name}?', yourSpace: 'Your space',
+    deleteSub: "Its saved readings go with it. This can't be undone.",
+    deleteActiveSub: "{app} is reading this chart now and will switch to another. This can't be undone.",
+    noTime: 'time unknown', use: 'Use this chart', useSub: 'Read the sky for this person',
+    editAction: 'Edit birth details', editSub: 'Name, date, time and place', deleteAction: 'Delete chart',
     alerts: 'Alerts', settings: 'Settings', pro: '{app} Pro', proActive: 'Pro is active', trialEnds: 'Trial ends {date}',
   },
   relation: { self: 'You', family: 'Family', friend: 'Friend', client: 'Client', other: 'Other' },
@@ -200,6 +214,7 @@ export default {
     periods: 'Time periods', periodsSub: '15 minutes before each choghadiya, sunrise to sunset',
     periods_night: 'Night time periods', periods_nightSub: '15 minutes before each, sunset to sunrise, silently',
     remedies: 'Remedy reminder', remediesSub: "Today's remedies, at {t}",
+    vrat: 'Ekadashi & festivals', vratSub: 'The evening before each Ekadashi and festival',
     unsupported: "Expo Go on Android can't deliver notifications. Your choices are saved and will work in the installed app.",
     permission: 'Notifications are off for {app}. Turn them on in system settings to receive alerts.',
     exactTitle: 'Get alerts on time',

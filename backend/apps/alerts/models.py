@@ -18,6 +18,7 @@ class AlertPreference(models.Model):
     periods_night = models.BooleanField(default=True)  # each night choghadiya (silent on the phone)
     remedies = models.BooleanField(default=True)       # one daily reminder listing the remedies due
     remedy_time = models.TimeField(default=time(7, 0))
+    vrat = models.BooleanField(default=True)           # the evening before an Ekadashi or festival
     updated_at = models.DateTimeField(auto_now=True)
 
     PRO_FIELDS = ("transit", "sade_sati")

@@ -78,8 +78,9 @@ Errors always look like `{"error": {"code", "message", "details"}}`.
 | GET | `/daily/panchang/?date=` | the day's panchang with kinds, Śaka year and an interpretation note |
 | POST | `/daily/decision/` | `{activity, range}` → ranked windows with scores (Pro) |
 | GET | `/daily/transits/` | gochara vs natal chart + Sade Sati |
+| GET | `/daily/calendar/?month=YYYY-MM` | festival calendar: tithi at each sunrise, named Ekadashis and festivals with what to do (±24 months) |
 | GET/PUT | `/remedies/goals/` | goal catalogue · set goals (`{goals:[...]}`: 1 on the free plan, up to 3 with Pro), which seeds remedies for them |
-| GET/POST | `/remedies/` | list (seeded from goals, else the Daśā lord) / add for a graha or a custom remedy (Pro) |
+| GET/POST | `/remedies/` | list (seeded from goals, else the Daśā lord; chart remedies incl. the lagna element practice and Gandmool shanti puja) / add for a graha or a custom remedy (Pro) |
 | PATCH/DELETE | `/remedies/{id}/` | edit title/text/how/cadence/target/weekdays/reminder or `reset` (Pro) · remove (archived) |
 | POST | `/remedies/{id}/progress/` | count / mark complete |
 | GET | `/remedies/history/?days=365` | done vs due per day, for the heatmap |

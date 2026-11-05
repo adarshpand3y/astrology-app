@@ -289,7 +289,7 @@ async function promptExactAlarmsOnce({ title, message, later, allow }) {
 
 // --- Opening a notification -----------------------------------------------------------
 // Where tapping an alert takes the user, by category; other alerts just open the app.
-const ROUTES = { period: '/timeline', period_night: '/timeline', rahu: '/timeline', remedy: '/remedies' };
+const ROUTES = { period: '/timeline', period_night: '/timeline', rahu: '/timeline', remedy: '/remedies', vrat: '/timeline/calendar' };
 
 export function routeForNotification(data) {
   return ROUTES[data?.category] || null;

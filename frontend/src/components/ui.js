@@ -11,6 +11,7 @@ import { useI18n } from '../i18n';
 import { useOnline } from '../network';
 import { ERROR, useTheme } from '../theme';
 import { errorMessage } from '../utils/format';
+import { ProIcon } from './Icons';
 
 // --- Text -------------------------------------------------------------------------------
 const VARIANTS = {
@@ -293,7 +294,7 @@ export function Seg({ options, value, onChange, style, lockedValues = [] }) {
             borderColor: active ? th.c.accent : th.c.hair2, backgroundColor: active ? th.soft(0.08) : 'transparent',
           }}>
             <Text numberOfLines={1} style={[th.font.ui(600), { fontSize: 13, color: active ? th.c.accentDark : th.c.ink2 }]}>
-              {o.label}{lockedValues.includes(o.value) ? '  ◆' : ''}
+              {o.label}{lockedValues.includes(o.value) ? <>{'  '}<ProIcon size={12} /></> : null}
             </Text>
           </Pressable>
         );
@@ -543,7 +544,7 @@ export function ProLock({ text }) {
   const router = useRouter();
   return (
     <SoftPanel style={{ borderRadius: 16, padding: 16, marginVertical: 8 }} n={0.1}>
-      <PanelHeading glyph="◆">{t('common.pro')}</PanelHeading>
+      <PanelHeading glyph={<ProIcon size={13} />}>{t('common.pro')}</PanelHeading>
       <T v="small" style={{ marginBottom: 10 }}>{text}</T>
       <Button small title={t('common.unlock')} onPress={() => router.push('/paywall')} />
     </SoftPanel>

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone as dj_tz
@@ -11,21 +12,30 @@ from apps.vedic import services as vedic
 from apps.vedic.content import goals as gc
 from apps.vedic.content import remedies as rc
 from apps.vedic.content.common import GLYPH, WEEKDAY_SHORT, short
-from apps.vedic.engine.constants import GANDMOOL_NAKSHATRAS
+from apps.vedic.engine.constants import GANDMOOL_NAKSHATRAS, SIGN_TATVA
 
 from .models import RemedyLog, UserRemedy
 
-SEED_REMINDERS = {"mantra": True, "fast": True, "charity": False, "gem": False, "seva": True, "custom": True}
+SEED_REMINDERS = {"mantra": True, "fast": True, "charity": False, "gem": False, "seva": True, "puja": True,
+                  "element": True, "custom": True}
 ALL_DAYS = list(range(7))
+# Bump when the chart rules change, so every account syncs again after a deploy.
+SYNC_VERSION = 1
 
 
 def active(user):
     return UserRemedy.objects.filter(user=user, archived_at__isnull=True)
 
 
-def focus_planets(profile) -> list[str]:
+def current_lords(profile, at=None) -> tuple[str, str]:
+    """The running Mahadasha and Antardasha lords."""
+    md, ad = vedic._vimshottari(profile).current(at or dj_tz.now(), levels=2)[:2]
+    return md.lord, ad.lord
+
+
+def focus_planets(profile, md: str | None = None) -> list[str]:
     """Graha to support: the Mahadasha lord first, then the weakest graha if it needs support."""
-    md = vedic._vimshottari(profile).current(dj_tz.now(), levels=1)[0].lord
+    md = md or current_lords(profile)[0]
     planets = [md]
     shad = vedic.get_strengths(profile)["shadbala"]["planets"]
     weakest = min(shad, key=lambda k: shad[k]["ratio"])
@@ -36,11 +46,12 @@ def focus_planets(profile) -> list[str]:
 
 @transaction.atomic
 def seed_for(user, profile) -> None:
-    """Fallback for accounts without goals: the four remedies of the Mahadasha lord."""
+    """Fallback for accounts without goals: mantra, fast and charity for the Mahadasha lord (no
+    gemstone, as with goal suggestions)."""
     if user.goals or UserRemedy.objects.filter(user=user).exists() or profile is None:
         return
-    lord = focus_planets(profile)[0]
-    for kind in rc.KINDS:
+    lord = current_lords(profile)[0]
+    for kind in ("mantra", "fast", "charity"):
         UserRemedy.objects.get_or_create(user=user, planet=lord, kind=kind, archived_at=None,
                                          defaults={"reminder": SEED_REMINDERS[kind]})
 
@@ -48,18 +59,19 @@ def seed_for(user, profile) -> None:
 CHART_KIND = "mantra"  # chart remedies are each graha's beej mantra
 
 
-def chart_reasons(profile, at=None) -> dict[str, list[str]]:
+def chart_reasons(profile, at=None, dasha: tuple[str, str] | None = None) -> dict[str, list[str]]:
     """Graha -> reasons it gets a remedy whatever the goals: the lagna lord (when the birth time is
     known), Chandra, the current Mahadasha and Antardasha lords, and, when Chandra was born in a Gandmool
-    nakshatra, that nakshatra's lord (Ketu or Budh). Order is kept for badges."""
+    nakshatra, that nakshatra's lord (Ketu or Budh). Order is kept for badges. `dasha` is the
+    (MD, AD) lords at `at`, when the caller already has them."""
     if profile is None:
         return {}
-    md, ad = vedic._vimshottari(profile).current(at or dj_tz.now(), levels=2)[:2]
+    md, ad = dasha or current_lords(profile, at)
     pairs = []
     lords = house_lords(profile)
     if lords:
         pairs.append(("lagna", lords[1]))
-    pairs += [("moon", "Mo"), ("mahadasha", md.lord), ("antardasha", ad.lord)]
+    pairs += [("moon", "Mo"), ("mahadasha", md), ("antardasha", ad)]
     moon_nak = next(p for p in vedic.get_chart(profile)["planets"] if p["code"] == "Mo")["nakshatra"]
     if moon_nak["index"] - 1 in GANDMOOL_NAKSHATRAS:
         pairs.append(("gandmool", moon_nak["lord"]))
@@ -77,17 +89,53 @@ def gandmool_birth_planets(profile) -> list[str]:
             if p["nakshatra"]["index"] - 1 in GANDMOOL_NAKSHATRAS]
 
 
-def chart_wants(profile, at=None) -> dict[tuple[str, str], list[str]]:
-    """(graha, kind) -> chart reasons: each `chart_reasons` graha's mantra, plus gau seva (no graha)
-    when any graha was born in a Gandmool nakshatra."""
-    want = {(planet, CHART_KIND): reasons for planet, reasons in chart_reasons(profile, at).items()}
+def lagna_element(profile) -> str | None:
+    """The lagna's tattva ("Fire", "Earth", "Air", "Water"), only when the birth time is known."""
+    if profile is None or not profile.time_known:
+        return None
+    return SIGN_TATVA[vedic.get_chart(profile)["lagna"]["sign_index"] - 1]
+
+
+def chart_wants(profile, at=None, dasha: tuple[str, str] | None = None) -> dict[tuple[str, str], list[str]]:
+    """(graha, kind) -> chart reasons: each `chart_reasons` graha's mantra; for no graha, gau seva when
+    any graha was born in a Gandmool nakshatra, the one-time shanti puja when Chandra was, and the
+    lagna element's practice when the birth time is known."""
+    reasons = chart_reasons(profile, at, dasha)
+    want = {(planet, CHART_KIND): r for planet, r in reasons.items()}
     if gandmool_birth_planets(profile):
         want[("", UserRemedy.Kind.SEVA)] = ["gandmool_birth"]
+    if any("gandmool" in r for r in reasons.values()):
+        want[("", UserRemedy.Kind.PUJA)] = ["gandmool"]
+    if lagna_element(profile):
+        want[("", UserRemedy.Kind.ELEMENT)] = ["lagna_element"]
     return want
 
 
+def _sync_cache_key(user) -> str:
+    return f"remedy-sync:{user.pk}"
+
+
+def _sync_stamp(profile, dasha: tuple[str, str]) -> str:
+    """What a chart sync depends on: the profile, its birth data and the running dasha lords."""
+    return f"{SYNC_VERSION}:{profile.pk}:{vedic.input_hash(profile)}:{'/'.join(dasha)}"
+
+
+def forget_sync(user) -> None:
+    """The user changed their list: the next `refresh_chart` runs the sync again."""
+    cache.delete(_sync_cache_key(user))
+
+
+def refresh_chart(user, profile, dasha: tuple[str, str] | None = None) -> None:
+    """`sync_chart`, skipped while the profile and the dasha lords are what the last sync saw."""
+    if profile is None:
+        return
+    dasha = dasha or current_lords(profile)
+    if cache.get(_sync_cache_key(user)) != _sync_stamp(profile, dasha):
+        sync_chart(user, profile, dasha=dasha)
+
+
 @transaction.atomic
-def sync_chart(user, profile, at=None) -> None:
+def sync_chart(user, profile, at=None, dasha: tuple[str, str] | None = None) -> None:
     """Keep the chart remedies (see `chart_wants`) on the list as the dasha moves on.
 
     A reason that no longer holds is dropped; a suggested remedy left with no reason and no goal is
@@ -95,7 +143,8 @@ def sync_chart(user, profile, at=None) -> None:
     not added back for that reason."""
     if profile is None:
         return
-    want = chart_wants(profile, at)
+    dasha = dasha or current_lords(profile, at)
+    want = chart_wants(profile, at, dasha)
     now = dj_tz.now()
     rows = list(active(user).exclude(kind=UserRemedy.Kind.CUSTOM))
     for r in rows:
@@ -122,6 +171,8 @@ def sync_chart(user, profile, at=None) -> None:
         if reasons:
             UserRemedy.objects.create(user=user, planet=planet, kind=kind, basis=reasons,
                                       reminder=SEED_REMINDERS[kind])
+    if at is None:  # a sync for another moment says nothing about now
+        cache.set(_sync_cache_key(user), _sync_stamp(profile, dasha), 60 * 60 * 24)
 
 
 def house_lords(profile) -> dict[int, str] | None:
@@ -168,9 +219,11 @@ def set_goals(user, profile, goals: list[str]) -> None:
             r.save(update_fields=["goal"])
     user.goals = list(goals)
     user.save(update_fields=["goals"])
+    forget_sync(user)
 
 
 def add_for_planet(user, planet: str, kinds=("mantra", "charity")) -> list[UserRemedy]:
+    forget_sync(user)
     out = []
     for kind in kinds:
         obj, created = UserRemedy.objects.get_or_create(user=user, planet=planet, kind=kind, archived_at=None,
@@ -189,12 +242,19 @@ def _cadence(weekdays: list[int] | None, target: int, lang: str) -> str:
     return f"{target}× · {days}" if target > 1 else days
 
 
+def _element(remedy: UserRemedy) -> str | None:
+    """The tattva an "element" remedy is for, from the active chart."""
+    return lagna_element(remedy.user.active_profile) if remedy.kind == UserRemedy.Kind.ELEMENT else None
+
+
 def effective(remedy: UserRemedy, lang: str) -> dict:
-    """Catalogue display data with the user's edits applied. `weekdays` is None for every day."""
+    """Catalogue display data with the user's edits applied. `weekdays` is None for every day;
+    `once` marks a remedy done a single time (the shanti puja)."""
     if remedy.kind == UserRemedy.Kind.CUSTOM:
         info = {"title": "", "cadence": "", "text": "", "how": "", "target": 1, "weekday": None}
     else:
-        info = rc.remedy(remedy.planet, remedy.kind, lang)
+        info = rc.remedy(remedy.planet, remedy.kind, lang, _element(remedy))
+    info.setdefault("once", False)
     weekdays = None if info["weekday"] is None else [info["weekday"]]
     for f in ("title", "text", "how"):
         if getattr(remedy, f):
@@ -212,8 +272,18 @@ def effective(remedy: UserRemedy, lang: str) -> dict:
     return info
 
 
+def done_on(remedy: UserRemedy) -> date | None:
+    """The first day a one-time remedy was completed."""
+    return min((l.date for l in remedy.logs.all() if l.completed), default=None)
+
+
 def is_due(remedy: UserRemedy, day: date, info: dict | None = None) -> bool:
-    weekdays = (info or effective(remedy, "en"))["weekdays"]
+    """A one-time remedy is due every day until the day it is done (so it still shows as done that day)."""
+    info = info or effective(remedy, "en")
+    if info["once"]:
+        first = done_on(remedy)
+        return first is None or first >= day
+    weekdays = info["weekdays"]
     return weekdays is None or (day.weekday() + 1) % 7 in weekdays  # Sunday = 0
 
 
@@ -249,8 +319,14 @@ def history(user, today: date, days: int = 365) -> dict:
     done = dict(RemedyLog.objects.filter(remedy__user=user, completed=True, date__range=(start, today))
                 .values("date").annotate(n=Count("id")).values_list("date", "n"))
     due = {start + timedelta(days=i): 0 for i in range(days)}
-    for r in UserRemedy.objects.filter(user=user):
-        weekdays = effective(r, "en")["weekdays"]
+    for r in UserRemedy.objects.filter(user=user).select_related("user__active_profile").prefetch_related("logs"):
+        info = effective(r, "en")
+        if info["once"]:  # counts only on the day it was done, not every day before
+            d = done_on(r)
+            if d in due:
+                due[d] += 1
+            continue
+        weekdays = info["weekdays"]
         first = max(start, r.created_at.date())
         last = min(today, r.archived_at.date() - timedelta(days=1)) if r.archived_at else today
         d = first
@@ -269,8 +345,9 @@ def history(user, today: date, days: int = 365) -> dict:
 
 def serialize(remedy: UserRemedy, today: date, lang: str) -> dict:
     info = effective(remedy, lang)
-    # Gau seva names the grahas it is for, from the active chart.
+    # Gau seva names the grahas it is for, and the tattva practice its element, from the active chart.
     gandmool = gandmool_birth_planets(remedy.user.active_profile) if "gandmool_birth" in remedy.basis else []
+    element = _element(remedy)
     log = next((l for l in remedy.logs.all() if l.date == today), None)
     monday = today - timedelta(days=today.weekday())
     done = {l.date for l in remedy.logs.all() if l.completed}
@@ -283,7 +360,9 @@ def serialize(remedy: UserRemedy, today: date, lang: str) -> dict:
         "goal": remedy.goal, "goal_label": gc.label(remedy.goal, lang),
         # Badge: the goal it serves, else why the chart calls for it ("Mahadasha", "Lagna"…).
         "goal_short": gc.short_label(remedy.goal, lang) or rc.basis_short(remedy.basis, lang),
-        "basis": remedy.basis, "basis_label": rc.basis_label(remedy.basis, lang, gandmool),
+        "basis": remedy.basis, "basis_label": rc.basis_label(remedy.basis, lang, gandmool, element),
+        "element": element.lower() if element else None,
+        "done_on": d.isoformat() if info["once"] and (d := done_on(remedy)) else None,
         "reminder": remedy.reminder, "due_today": is_due(remedy, today, info),
         "edited": remedy.edited,
         "overrides": {f: getattr(remedy, f) for f in UserRemedy.OVERRIDES},

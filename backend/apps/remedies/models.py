@@ -12,6 +12,8 @@ class UserRemedy(models.Model):
         CHARITY = "charity", "Charity"
         GEM = "gem", "Gemstone"
         SEVA = "seva", "Seva"  # chart-wide, planet "": gau seva for grahas born in Gandmool nakshatras
+        PUJA = "puja", "Puja"  # chart-wide, one-time: Gandmool shanti puja for a Gandmool Chandra
+        ELEMENT = "element", "Element"  # chart-wide, daily: a practice for the lagna's element (tattva)
         CUSTOM = "custom", "Custom"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="remedies")
@@ -21,9 +23,9 @@ class UserRemedy(models.Model):
     # The goal that suggested this remedy ("" = dasha fallback or added by the user).
     goal = models.CharField(max_length=20, blank=True)
     # Chart reasons this remedy is suggested for, whatever the goals: "lagna" (lagna lord), "moon",
-    # "mahadasha", "antardasha" (their lords), "gandmool" (lord of a Gandmool birth nakshatra of
-    # Chandra), "gandmool_birth" (any graha born in a Gandmool nakshatra: gau seva). Kept up to date
-    # as the dasha moves on.
+    # "mahadasha", "antardasha" (their lords), "gandmool" (Chandra born in a Gandmool nakshatra: that
+    # nakshatra's lord, and the shanti puja), "gandmool_birth" (any graha born in a Gandmool nakshatra:
+    # gau seva), "lagna_element" (the lagna's tattva practice). Kept up to date as the dasha moves on.
     basis = models.JSONField(default=list, blank=True)
     # Added by the user (POST), as opposed to suggested; suggestions can be retired automatically.
     user_added = models.BooleanField(default=False)

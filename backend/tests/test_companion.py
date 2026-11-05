@@ -85,6 +85,11 @@ def test_home(client, lang):
     assert r.status_code == 200, r.data
     d = r.data
     assert d["name"] == "Ananya" and d["location"]["city"] == "Pune"
+    # The festival glimpse: a month always holds an Ekadashi; nearest first, at most three.
+    fest = d["festivals"]
+    assert 1 <= len(fest) <= 3 and all(f["name"] and f["how"] and f["glyph"] for f in fest)
+    assert [f["days_away"] for f in fest] == sorted(f["days_away"] for f in fest) and 0 <= fest[0]["days_away"] <= 30
+    assert any(f["key"].startswith("ekadashi") for f in fest) or fest[-1]["days_away"] <= 16
     sky = d["sky"]
     assert [p["planet"] for p in sky["planets"]] == ["Su", "Mo", "Ma", "Me", "Ju", "Ve", "Sa", "Ra", "Ke"]
     assert all(0 <= p["degree"] < 30 for p in sky["planets"])  # degree within the sign
@@ -194,8 +199,11 @@ def test_chart_remedies(client):
     assert rs.gandmool_birth_planets(BirthProfile.objects.get(owner__email="ananya@example.com"))
     seva = [x for x in remedies if x["kind"] == "seva"]
     assert len(seva) == 1 and seva[0]["basis"] == ["gandmool_birth"]
-    chart = [x for x in remedies if x["basis"] and x["kind"] != "seva"]
-    assert {b for x in chart for b in x["basis"]} == {"lagna", "moon", "mahadasha", "antardasha"}  # birth time known
+    # Birth time known: the lagna element's practice too.
+    assert [x["element"] for x in remedies if x["kind"] == "element"] == [rs.lagna_element(
+        BirthProfile.objects.get(owner__email="ananya@example.com")).lower()]
+    chart = [x for x in remedies if x["basis"] and x["planet"]]
+    assert {b for x in chart for b in x["basis"]} == {"lagna", "moon", "mahadasha", "antardasha"}
     assert all(x["kind"] == "mantra" for x in chart)
     assert len({x["planet"] for x in chart}) == len(chart)  # one mantra per graha, reasons merged
     moon = next(x for x in chart if x["planet"] == "Mo")
@@ -306,6 +314,136 @@ def test_gandmool_birth_adds_gau_seva(client, monkeypatch):
     assert UserRemedy.objects.get(user=user, kind="seva").archived_at is not None
 
 
+def test_gandmool_moon_adds_a_one_time_shanti_puja(client, monkeypatch):
+    """Chandra born in a Gandmool nakshatra: the shanti puja, due until the day it is done, then never again."""
+    import copy
+
+    from apps.profiles.models import BirthProfile
+    from apps.remedies import services as rs
+    from apps.vedic import services as vedic
+
+    user = User.objects.get(email="ananya@example.com")
+    profile = BirthProfile.objects.get(owner=user)
+    real = vedic.get_chart
+
+    def fake(p):
+        chart = copy.deepcopy(real(p))
+        moon = next(x for x in chart["planets"] if x["code"] == "Mo")
+        moon["nakshatra"] = {**moon["nakshatra"], "index": 9, "lord": "Me"}  # Ashlesha
+        return chart
+
+    monkeypatch.setattr(vedic, "get_chart", fake)
+    rs.sync_chart(user, profile)
+    today = date.today()
+    tomorrow = (today + timedelta(days=1)).isoformat()
+
+    def puja(day):
+        return [x for x in client.get("/api/v1/remedies/", {"today": day}).data["remedies"] if x["kind"] == "puja"]
+
+    [p] = puja(today.isoformat())
+    assert p["planet"] == "" and p["basis"] == ["gandmool"] and p["once"] and p["due_today"]
+    assert p["done_on"] is None and "shanti puja" in p["title"].lower()
+    assert puja(tomorrow)[0]["due_today"]  # not done yet: still due
+
+    r = client.post(f"/api/v1/remedies/{p['id']}/progress/", {"completed": True, "today": today.isoformat()},
+                    format="json")
+    assert r.status_code == 200
+    [p] = puja(today.isoformat())
+    assert p["due_today"] and p["today"]["completed"] and p["done_on"] == today.isoformat()  # shows as done today
+    [p] = puja(tomorrow)
+    assert not p["due_today"] and p["done_on"] == today.isoformat()  # and is never due again
+    rs.sync_chart(user, profile)
+    assert len(puja(tomorrow)) == 1
+
+    # The heatmap counts it on the day it was done only.
+    days = {d["date"]: d for d in client.get("/api/v1/remedies/history/", {"today": today.isoformat(),
+                                                                           "days": 7}).data["days"]}
+    assert days[today.isoformat()]["done"] >= 1
+
+
+def test_lagna_element_practice_on_the_free_plan(client, monkeypatch):
+    """A known birth time: one daily practice for the lagna's tattva, free to follow and mark done."""
+    import copy
+
+    from apps.billing.services import is_pro
+    from apps.profiles.models import BirthProfile
+    from apps.remedies import services as rs
+    from apps.vedic import services as vedic
+
+    user = User.objects.get(email="ananya@example.com")
+    profile = BirthProfile.objects.get(owner=user)
+    assert not is_pro(user)
+
+    def element_rows():
+        return [x for x in client.get("/api/v1/remedies/").data["remedies"] if x["kind"] == "element"]
+
+    [r] = element_rows()
+    assert r["planet"] == "" and r["basis"] == ["lagna_element"] and r["goal_short"] == "Lagna tattva"
+    assert r["due_today"] and r["weekdays"] is None and r["target"] == 1 and not r["once"]
+    r = client.post(f"/api/v1/remedies/{r['id']}/progress/", {"completed": True}, format="json")
+    assert r.status_code == 200 and r.data["remedy"]["today"]["completed"]
+
+    real = vedic.get_chart
+
+    def lagna_in(sign_index):
+        def fake(p):
+            chart = copy.deepcopy(real(p))
+            chart["lagna"] = {**chart["lagna"], "sign_index": sign_index}
+            return chart
+        return fake
+
+    for sign_index, element, title in ((1, "fire", "Surya arghya"), (2, "earth", "barefoot"),
+                                       (3, "air", "anulom-vilom"), (4, "water", "tulsi")):
+        monkeypatch.setattr(vedic, "get_chart", lagna_in(sign_index))
+        [r] = element_rows()
+        assert r["element"] == element and title in r["title"], (sign_index, r["title"])
+    assert r["basis_label"] == "For your lagna's element: Jal (water)"
+    hi = client.get("/api/v1/remedies/", HTTP_ACCEPT_LANGUAGE="hi").data["remedies"]
+    assert next(x for x in hi if x["kind"] == "element")["title"].startswith("जल तत्व")
+
+    # No birth time, no lagna: the practice is retired (its history stays).
+    profile.time_known = False
+    profile.save()
+    rs.sync_chart(user, profile)
+    assert not element_rows()
+
+
+def test_fallback_seed_has_no_gemstone(places):
+    """No goals yet: the Mahadasha lord's mantra, fast and charity, but no gemstone."""
+    blr, _ = places
+    c = signup("nogoals@example.com")
+    assert c.post("/api/v1/profiles/", {"name": "Ravi", "relation": "self", "birth_date": "1990-01-05",
+                                        "birth_time": "06:10", "place_id": blr.id}, format="json").status_code == 201
+    remedies = c.get("/api/v1/remedies/").data["remedies"]
+    seeded = {x["kind"] for x in remedies if x["planet"] and not x["goal"]}
+    assert {"mantra", "fast", "charity"} <= seeded and "gem" not in seeded
+
+
+def test_remedy_list_skips_an_unchanged_chart_sync(client, monkeypatch):
+    """The chart sync runs again only when the profile, its birth data, the dasha lords or the list change."""
+    from apps.profiles.models import BirthProfile
+    from apps.remedies import services as rs
+
+    calls = []
+    real = rs.sync_chart
+    monkeypatch.setattr(rs, "sync_chart", lambda *a, **k: calls.append(1) or real(*a, **k))
+
+    remedies = client.get("/api/v1/remedies/").data["remedies"]  # onboarding's goals call already synced
+    client.get("/api/v1/alerts/schedule/", {"days": 1})
+    assert calls == []
+
+    assert client.delete(f"/api/v1/remedies/{remedies[0]['id']}/").status_code == 204
+    client.get("/api/v1/remedies/")
+    client.get("/api/v1/remedies/")
+    assert len(calls) == 1
+
+    profile = BirthProfile.objects.get(owner__email="ananya@example.com")
+    profile.node_mode = "true" if profile.node_mode == "mean" else "mean"  # new birth data hash
+    profile.save()
+    client.get("/api/v1/remedies/")
+    assert len(calls) == 2
+
+
 def test_right_now_card(client):
     """The Home "Right now" card: the period in force (a kaal over the choghadiya under it) and the next one."""
     from zoneinfo import ZoneInfo
@@ -343,13 +481,15 @@ def test_right_now_card(client):
 
 def test_alert_feed_updates_chart_remedies(client):
     """Opening the app fetches the alert feed; that alone brings chart remedies up to date."""
+    from apps.remedies import services as rs
     from apps.remedies.models import UserRemedy
 
     user = User.objects.get(email="ananya@example.com")
     UserRemedy.objects.filter(user=user).exclude(basis=[]).delete()  # as if never synced
+    rs.forget_sync(user)
     items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
     reasons = {b for r in UserRemedy.objects.filter(user=user, archived_at__isnull=True) for b in r.basis}
-    assert reasons == {"lagna", "moon", "mahadasha", "antardasha", "gandmool_birth"}
+    assert reasons == {"lagna", "moon", "mahadasha", "antardasha", "gandmool_birth", "lagna_element"}
     assert any("Chandra beej mantra" in i["body"] for i in items if i["category"] == "remedy")
 
 
@@ -482,6 +622,48 @@ def test_journal_and_trends(client):
                       QUERY_STRING=f"today={today.isoformat()}").status_code == 400
 
 
+def test_festival_calendar(client):
+    """The month's tithi at each sunrise with its Ekadashis and festivals, at the user's place (Pune)."""
+    r = client.get("/api/v1/daily/calendar/", {"month": "2026-11"})
+    assert r.status_code == 200, r.data
+    days = r.data["days"]
+    assert r.data["month"] == "2026-11" and len(days) == 30 and days[0]["date"] == "2026-11-01"
+    assert all(1 <= d["tithi"] <= 30 and d["paksha"] in ("Shukla", "Krishna") for d in days)
+    by_key = {o["key"]: d["date"] for d in days for o in d["observances"]}
+    assert by_key["diwali"] == "2026-11-08"
+    diwali = next(o for d in days for o in d["observances"] if o["key"] == "diwali")
+    assert diwali["name"] == "Diwali" and diwali["how"] and diwali["glyph"] and diwali["fast"] is False
+    assert len(diwali["steps"]) >= 3
+    ekadashis = [o for d in days for o in d["observances"] if o["key"].startswith("ekadashi")]
+    assert [o["name"] for o in ekadashis] == ["Rama Ekadashi", "Devutthana Ekadashi"] and all(o["fast"] for o in ekadashis)
+    assert {"govardhan_puja", "bhai_dooj", "kartik_purnima"} <= set(by_key)
+    assert not {"purnima", "amavasya", "sankranti"} & set(by_key)  # only Ekadashi among the monthly vrats
+
+    hi = client.get("/api/v1/daily/calendar/", {"month": "2026-11", "lang": "hi"}).data["days"]
+    assert any(o["name"] == "दीपावली" for d in hi for o in d["observances"])
+    assert client.get("/api/v1/daily/calendar/").data["month"] == date.today().strftime("%Y-%m")
+
+    for bad in ("2026-13", "nov", "2026-11-05"):
+        r = client.get("/api/v1/daily/calendar/", {"month": bad})
+        assert r.status_code == 400 and r.data["error"]["code"] == "invalid_month", bad
+    far = date.today().year + 5
+    assert client.get("/api/v1/daily/calendar/", {"month": f"{far}-01"}).data["error"]["code"] == "month_out_of_range"
+
+
+def test_vrat_alerts(client):
+    """The evening before an Ekadashi or festival, one reminder naming that day's observances."""
+    items = client.get("/api/v1/alerts/schedule/", {"days": 14}).data["items"]
+    vrats = [i for i in items if i["category"] == "vrat"]
+    assert vrats  # two weeks always hold an Ekadashi (they come every ~15 days, from tomorrow on)
+    assert all(i["title"].startswith("🌕 Tomorrow: ") and i["body"] for i in vrats)
+    assert all(i["at"][11:16] == "19:00" for i in vrats)
+    assert len({i["at"][:10] for i in vrats}) == len(vrats)  # one per evening
+
+    assert client.patch("/api/v1/alerts/prefs/", {"vrat": False}, format="json").data["vrat"] is False
+    items = client.get("/api/v1/alerts/schedule/", {"days": 14}).data["items"]
+    assert not [i for i in items if i["category"] == "vrat"]
+
+
 def test_alerts(client):
     prefs = client.get("/api/v1/alerts/prefs/").data
     assert prefs["rahu"] and prefs["daily"] and not prefs["is_pro"]
@@ -489,7 +671,7 @@ def test_alerts(client):
     assert client.patch("/api/v1/alerts/prefs/", {"rahu": False}, format="json").data["rahu"] is False
     items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
     assert items and all(i["category"] != "rahu" for i in items)
-    assert {i["category"] for i in items} <= {"daily", "dasha", "period", "period_night", "remedy"}
+    assert {i["category"] for i in items} <= {"daily", "dasha", "period", "period_night", "remedy", "vrat"}
 
     reminders = [i for i in items if i["category"] == "remedy"]
     assert reminders and reminders[0]["title"].startswith("🪔 Today's remedies · ")

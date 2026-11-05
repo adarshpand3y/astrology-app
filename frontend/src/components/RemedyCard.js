@@ -2,7 +2,8 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useI18n } from '../i18n';
 import { useTheme } from '../theme';
-import { RemedyIcon } from './Icons';
+import { fullDate } from '../utils/format';
+import { ProIcon, RemedyIcon } from './Icons';
 import { T } from './ui';
 
 /**
@@ -11,8 +12,11 @@ import { T } from './ui';
  */
 export function RemedyCard({ remedy: r, onPress, right }) {
   const th = useTheme();
-  const { t } = useI18n();
-  const details = [r.cadence, r.planet_name, r.edited && t('remedies.edited')].filter(Boolean).join(' · ');
+  const { t, lang } = useI18n();
+  const details = [
+    r.done_on ? t('remedies.doneOn', { date: fullDate(r.done_on, lang) }) : r.cadence,
+    r.planet_name, r.edited && t('remedies.edited'),
+  ].filter(Boolean).join(' · ');
   return (
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: th.c.surface,
@@ -20,7 +24,7 @@ export function RemedyCard({ remedy: r, onPress, right }) {
     }}>
       <Pressable onPress={onPress} disabled={!onPress} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: th.soft(0.15), alignItems: 'center', justifyContent: 'center' }}>
-          <RemedyIcon kind={r.kind} size={20} color={th.c.accent} />
+          <RemedyIcon kind={r.kind} element={r.element} size={20} color={th.c.accent} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <T weight={600} style={{ fontSize: 14.5 }} numberOfLines={2}>{r.title}</T>
@@ -68,10 +72,12 @@ function LabelledButton({ icon, label, onPress, disabled, filled, dashed, a11y }
   );
 }
 
-/** Edit (Pro: `locked` shows ◆ and the caller opens the paywall). */
+/** Edit (Pro: `locked` shows the crown and the caller opens the paywall). */
 export function EditButton({ locked, onPress }) {
   const { t } = useI18n();
-  return <LabelledButton icon="✎" label={locked ? `◆ ${t('remedies.edit')}` : t('remedies.edit')} onPress={onPress} />;
+  const label = locked ? <><ProIcon size={10} />{` ${t('remedies.edit')}`}</> : t('remedies.edit');
+  return <LabelledButton icon="✎" label={label} a11y={locked ? `${t('remedies.edit')} (${t('common.pro')})` : undefined}
+    onPress={onPress} />;
 }
 
 /** Done today: filled "Completed" (tap again to undo), outlined "Mark complete" when due, dashed when not due. */
@@ -81,5 +87,6 @@ export function DoneButton({ remedy: r, onPress }) {
   const due = r.due_today;
   if (done) return <LabelledButton icon="✓" filled label={t('remedies.completed')} onPress={onPress} a11y={t('remedies.undoA11y')} />;
   if (due) return <LabelledButton icon="✓" label={t('remedies.markComplete')} onPress={onPress} />;
+  if (r.done_on) return <LabelledButton icon="✓" disabled label={t('remedies.completed')} a11y={t('remedies.doneOnce')} />;
   return <LabelledButton icon="–" dashed disabled label={t('remedies.notToday')} a11y={t('remedies.notDue')} />;
 }

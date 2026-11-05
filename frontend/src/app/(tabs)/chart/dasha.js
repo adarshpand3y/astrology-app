@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { ProIcon } from '../../../components/Icons';
 import { BackLink, Bar, Card, ErrorView, GlyphDot, Loading, ProLock, Row, Screen, T } from '../../../components/ui';
 import { useAccount, useBilling, useChart, useDashaCurrent, useDashaLevel } from '../../../hooks/data';
 import { useI18n } from '../../../i18n';
@@ -158,7 +159,7 @@ export default function Dasha() {
                 </View>
                 <Row gap={8}>
                   <T v="mono" style={{ fontSize: 10.5, color: th.c.ink2 }}>{duration(Date.parse(p.end) - Date.parse(start), lang)}</T>
-                  {drill ? <Text style={{ color: th.c.ink3, fontSize: 14 }}>{locked ? '◆' : '›'}</Text> : null}
+                  {drill ? (locked ? <ProIcon size={13} /> : <Text style={{ color: th.c.ink3, fontSize: 14 }}>›</Text>) : null}
                 </Row>
               </Pressable>
             );

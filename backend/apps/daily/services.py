@@ -1,7 +1,8 @@
 """Daily companion features: home, day timeline, panchang, decisions, transits."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from django.core.cache import cache
 
@@ -9,12 +10,14 @@ from apps.vedic import services as vedic
 from apps.vedic.content import insight as insight_text
 from apps.vedic.content import panchang as pc
 from apps.vedic.content import sky as sky_text
+from apps.vedic.content import vrat
 from apps.vedic.content.activities import RANGES, activity_meta
 from apps.vedic.content.common import KIND_LABEL, nakshatra_name, yoga_name
 from apps.vedic.content.muhurta import period_text
 from apps.vedic.engine import transits as tr
 from apps.vedic.engine.attributes import is_combust
-from apps.vedic.engine.chart import compute_day_panchang, jsonable
+from apps.vedic.engine.calendar import month_calendar
+from apps.vedic.engine.chart import ENGINE_VERSION, compute_day_panchang, jsonable
 from apps.vedic.engine.constants import (
     DEBILITATION, EXALTATION, GANDMOOL_NAKSHATRAS, NAKSHATRA_SPAN, NAKSHATRAS, PADA_SPAN, SIGNS, SIGNS_SANSKRIT,
 )
@@ -131,7 +134,19 @@ def home(ctx: DayContext) -> dict:
         "windows": windows,
         "now": right_now(ctx) if ctx.is_today else None,
         "sky": sky(ctx, n, positions),
+        "festivals": upcoming_festivals(ctx),
     }, ctx.tz)
+
+
+HOME_FESTIVALS = 3
+HOME_FESTIVAL_DAYS = 30
+
+
+def upcoming_festivals(ctx: DayContext) -> list[dict]:
+    """Home's glimpse: today's Ekadashi or festivals, then the next ones within a month (at most 3)."""
+    found = observances_between(ctx, ctx.day, ctx.day + timedelta(days=HOME_FESTIVAL_DAYS))
+    return [{**{k: o[k] for k in ("key", "name", "glyph", "fast", "how")},
+             "date": d.isoformat(), "days_away": (d - ctx.day).days} for d, o in found[:HOME_FESTIVALS]]
 
 
 # Each period's traditional ruling graha, shown as its glyph on the "Right now" card.
@@ -293,6 +308,51 @@ def panchang(ctx: DayContext) -> dict:
         "rows": rows,
         "note": pc.note(yoga_display, yoga_info["kind"], nak_display, nak_info["nature"], lang),
     }
+
+
+# --- Festival calendar ---------------------------------------------------------------
+
+CALENDAR_MONTHS = 24  # how far from this month the calendar reaches, either way
+CALENDAR_VERSION = 2  # bump when the observance rules change, so cached months are rebuilt
+
+
+def calendar_days(year: int, month: int, lat: float, lon: float, tz_name: str, ayanamsa: str) -> list[dict]:
+    """A month's days and observance keys, cached per place (to ~10 km) since nothing in it is per user."""
+    lat, lon = round(lat, 1), round(lon, 1)
+    key = f"calendar:{ENGINE_VERSION}.{CALENDAR_VERSION}:{year}-{month:02d}:{lat}:{lon}:{tz_name}:{ayanamsa}"
+    return cache.get_or_set(key, lambda: month_calendar(year, month, lat, lon, ZoneInfo(tz_name), ayanamsa),
+                            60 * 60 * 24 * 7)
+
+
+def _texts(day: dict, lang: str) -> list[dict]:
+    return [vrat.observance(o["key"], lang, o.get("month"), o.get("is_adhika", False)) for o in day["observances"]]
+
+
+def observances_between(ctx: DayContext, start: date, end: date) -> list[tuple[date, dict]]:
+    """(date, observance text) for every observance from `start` to `end`, at the context's place."""
+    ayanamsa = ctx.profile.ayanamsa if ctx.profile else "lahiri"
+    out, ym = [], (start.year, start.month)
+    while ym <= (end.year, end.month):
+        for d in calendar_days(*ym, ctx.lat, ctx.lon, ctx.tz_name, ayanamsa):
+            if start <= d["date"] <= end:
+                out += [(d["date"], o) for o in _texts(d, ctx.lang)]
+        ym = (ym[0] + ym[1] // 12, ym[1] % 12 + 1)
+    return out
+
+
+def calendar(ctx: DayContext, year: int, month: int) -> dict:
+    """The month's tithi at each sunrise and its Ekadashis and festivals, at the user's place."""
+    ayanamsa = ctx.profile.ayanamsa if ctx.profile else "lahiri"
+    days = [{
+        "date": d["date"].isoformat(), "sunrise": d["sunrise"], "tithi": d["tithi"], "tithi_name": d["tithi_name"],
+        "paksha": d["paksha"], "month": d["month"], "is_adhika": d["is_adhika"],
+        "observances": _texts(d, ctx.lang),
+    } for d in calendar_days(year, month, ctx.lat, ctx.lon, ctx.tz_name, ayanamsa)]
+    return jsonable({
+        "month": f"{year}-{month:02d}", "today": ctx.day.isoformat(),
+        "location": {"label": ctx.place_label, "city": ctx.place_city, "region": ctx.place_region},
+        "days": days,
+    }, ctx.tz)
 
 
 # --- Decision assistant ---------------------------------------------------------------

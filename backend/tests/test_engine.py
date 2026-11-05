@@ -265,3 +265,95 @@ def test_gandmool_guide_names_the_nakshatra_and_its_lord():
     assert "Pray to Vishnu" in moon["do"] and "Chant the Budh beej mantra" in moon["do"]
     assert "Pray to Ganesha" in guide("Sa", "gandmool", 1, "en", nakshatra=18)["do"]  # Mula, ruled by Ketu
     assert guide("Mo", "gandmool", 1, "en") is None  # needs the nakshatra
+
+
+# --- Vrat & festival calendar ----------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def varanasi_2026_days():
+    from zoneinfo import ZoneInfo
+
+    from apps.vedic.engine.calendar import month_calendar
+
+    return [d for month in range(1, 13)
+            for d in month_calendar(2026, month, 25.3176, 82.9739, ZoneInfo("Asia/Kolkata"))]
+
+
+@pytest.fixture(scope="module")
+def varanasi_2026(varanasi_2026_days):
+    """Observance key -> dates, for Varanasi through 2026."""
+    found: dict[str, list] = {}
+    for d in varanasi_2026_days:
+        for o in d["observances"]:
+            found.setdefault(o["key"], []).append(d["date"].isoformat())
+    return found
+
+
+@pytest.mark.parametrize("key,day", [
+    ("makar_sankranti", "2026-01-14"),
+    ("holi", "2026-03-04"),               # Pratipada at sunrise, the day after Holika Dahan's Purnima
+    ("chaitra_navratri", "2026-03-19"),   # Pratipada is kshaya: the day it begins, in the new month
+    ("vat_savitri", "2026-05-16"),
+    ("hariyali_teej", "2026-08-15"),
+    ("hartalika_teej", "2026-09-14"),
+    ("govardhan_puja", "2026-11-10"),
+    ("bhai_dooj", "2026-11-11"),
+    ("kartik_purnima", "2026-11-24"),
+    ("vasant_panchami", "2026-01-23"),
+    ("maha_shivaratri", "2026-02-15"),   # Chaturdashi at midnight
+    ("ram_navami", "2026-03-26"),        # Navami at midday, not at sunrise (27th)
+    ("janmashtami", "2026-09-04"),       # Ashtami at midnight
+    ("ganesh_chaturthi", "2026-09-14"),
+    ("navratri", "2026-10-11"),
+    ("dussehra", "2026-10-20"),          # Dashami in the afternoon
+    ("karva_chauth", "2026-10-29"),      # Krishna Chaturthi at moonrise
+    ("dhanteras", "2026-11-06"),
+    ("diwali", "2026-11-08"),            # Amavasya at sunset
+    ("chhath", "2026-11-15"),
+])
+def test_festival_dates(varanasi_2026, key, day):
+    assert day in varanasi_2026.get(key, []), varanasi_2026.get(key)
+
+
+def test_only_ekadashis_and_festivals(varanasi_2026):
+    from apps.vedic.content.vrat import KEYS
+
+    assert set(varanasi_2026) <= set(KEYS)
+    assert len(varanasi_2026["ekadashi_shukla"]) + len(varanasi_2026["ekadashi_krishna"]) in (24, 25, 26)
+    assert varanasi_2026["makar_sankranti"] == ["2026-01-14"]  # the only Sankranti listed
+
+
+def test_ekadashi_names(varanasi_2026_days):
+    """Named from the amanta month and paksha; in 2026's Adhika Jyeshtha they are Padmini and Parama."""
+    from apps.vedic.content.vrat import observance
+
+    names = {d["date"].isoformat(): observance(o["key"], "en", o["month"], o["is_adhika"])["name"]
+             for d in varanasi_2026_days for o in d["observances"] if o["key"].startswith("ekadashi")}
+    assert names["2026-11-05"] == "Rama Ekadashi"
+    assert names["2026-11-21"] == "Devutthana Ekadashi"
+    assert names["2026-06-25"] == "Nirjala Ekadashi"
+    assert {names["2026-05-27"], names["2026-06-11"]} == {"Padmini Ekadashi", "Parama Ekadashi"}
+    assert all(n != "Ekadashi" for n in names.values())  # every one has its name
+    nirjala = observance("ekadashi_shukla", "hi", "Jyeshtha", False)
+    assert nirjala["name"] == "निर्जला एकादशी" and len(nirjala["steps"]) == 5  # its own note added
+
+
+def test_every_observance_says_what_to_do():
+    from apps.vedic.content.vrat import KEYS, observance
+
+    for key in KEYS:
+        for lang in ("en", "hi"):
+            o = observance(key, lang, "Kartika", False)
+            assert o["name"] and o["how"] and len(o["steps"]) >= 3 and all(o["steps"]), (key, lang)
+
+
+def test_tithi_day_rules():
+    """Vriddhi (the tithi at two moments) counts on the first day; kshaya (at none) on the day it begins."""
+    from apps.vedic.engine.calendar import _days_of
+
+    assert _days_of([9, 10, 11], 10) == [1]
+    assert _days_of([9, 10, 10, 11], 10) == [1]      # vriddhi
+    assert _days_of([8, 9, 11, 12], 10) == [1]       # kshaya: Ekadashi began after day 1's sunrise
+    assert _days_of([28, 0, 1], 29) == []            # skipped on the lookbehind day: not this window's
+    assert _days_of([27, 28, 0, 1], 29) == [1]       # Amavasya skipped between days 1 and 2
+    assert _days_of([10, 11, 12], 10) == []          # already in force on the lookbehind day

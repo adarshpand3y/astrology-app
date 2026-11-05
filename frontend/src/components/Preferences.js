@@ -5,9 +5,10 @@ import { LANGUAGE_NAMES, LANGUAGES, useI18n } from '../i18n';
 import { usePrefs } from '../state/PrefsContext';
 import { useTheme } from '../theme';
 import { clock } from '../utils/format';
+import { ProIcon } from './Icons';
 import { Row, Seg, Switch, T } from './ui';
 
-export const ALERT_FIELDS = ['dasha', 'transit', 'rahu', 'sade_sati', 'daily', 'remedies', 'periods', 'periods_night'];
+export const ALERT_FIELDS = ['dasha', 'transit', 'rahu', 'sade_sati', 'daily', 'remedies', 'vrat', 'periods', 'periods_night'];
 
 /** Theme, language and chart style; stored on this phone (shared by Settings and onboarding). */
 export function AppearanceSettings() {
@@ -56,7 +57,7 @@ export function AlertToggles({ prefs: p, onToggle, fields = ALERT_FIELDS }) {
         <Row key={f} gap={13} style={{ paddingVertical: 14, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: th.c.hair }}>
           <View style={{ flex: 1 }}>
             <T weight={600} style={{ fontSize: 14 }}>
-              {t(`alerts.${f}`)}{p.pro_fields.includes(f) && !p.is_pro ? <Text style={{ color: th.c.accent, fontSize: 11 }}>  ◆ {t('common.pro')}</Text> : null}
+              {t(`alerts.${f}`)}{p.pro_fields.includes(f) && !p.is_pro ? <Text style={{ color: th.c.accent, fontSize: 11 }}>{'  '}<ProIcon size={11} /> {t('common.pro')}</Text> : null}
             </T>
             <T v="caption" style={{ marginTop: 1 }}>{sub(f)}</T>
           </View>
