@@ -160,6 +160,11 @@ export default function Remedies() {
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
       <T v="screenTitle" style={{ paddingHorizontal: 2, paddingTop: 8, paddingBottom: 3 }}>{t('remedies.title')}</T>
+      {data.profile && data.profile.relation !== 'self' ? (
+        <T v="eyebrow" style={{ paddingHorizontal: 2, paddingBottom: 4, color: th.c.accentDark }}>
+          {t('remedies.forChart', { name: data.profile.name })}
+        </T>
+      ) : null}
       {goals ? <T v="small" style={{ paddingHorizontal: 2, paddingBottom: 12 }} numberOfLines={2}>{t('remedies.subGoals', { goals })}</T>
         : focus ? <T v="small" style={{ paddingHorizontal: 2, paddingBottom: 12 }}>{t('remedies.sub', { planet: tr('graha', focus.code) })}</T> : null}
 

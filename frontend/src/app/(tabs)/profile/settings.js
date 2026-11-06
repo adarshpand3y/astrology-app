@@ -6,7 +6,7 @@ import { authApi } from '../../../api/endpoints';
 import { LocationPicker } from '../../../components/LocationPicker';
 import { AppearanceSettings } from '../../../components/Preferences';
 import { BackLink, Button, Card, ErrorView, PasswordField, Row, Screen, T } from '../../../components/ui';
-import { API_URL, APP_ENV, brand } from '../../../config/env';
+import { brand } from '../../../config/env';
 import { useI18n } from '../../../i18n';
 import { useAuth } from '../../../state/AuthContext';
 import { fieldErrors } from '../../../utils/format';
@@ -50,10 +50,6 @@ export default function Settings() {
         <Row style={{ justifyContent: 'space-between' }}>
           <T v="small">{brand.name}</T>
           <T v="small">{t('settings.version')} {Constants.expoConfig?.version || brand.version}</T>
-        </Row>
-        <Row style={{ justifyContent: 'space-between', marginTop: 8 }}>
-          <T v="small">{t('settings.server')}</T>
-          <T v="tiny" style={{ flexShrink: 1, textAlign: 'right' }}>{API_URL} ({APP_ENV})</T>
         </Row>
       </Section>
     </Screen>

@@ -214,7 +214,7 @@ function HomeContent() {
       {brand.features.vratCalendar && data.festivals?.length ? <FestivalGlimpse festivals={data.festivals} /> : null}
 
       {/* every graha now, with retrograde / combust advice */}
-      <SkyNow sky={data.sky} />
+      <SkyNow sky={data.sky} city={data.location.city} />
 
       {/* today's windows */}
       <Row style={{ justifyContent: 'space-between', marginTop: 22, marginBottom: 11, marginHorizontal: 2 }}>

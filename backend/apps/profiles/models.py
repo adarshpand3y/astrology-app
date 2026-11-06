@@ -43,6 +43,10 @@ class BirthProfile(TimeStampedUUIDModel):
     ayanamsa = models.CharField(max_length=20, default="lahiri")
     node_mode = models.CharField(max_length=4, choices=NodeMode.choices, default=NodeMode.MEAN)
     notes = models.TextField(blank=True)
+    # Life goals for this chart (keys of apps.vedic.content.goals): they drive its remedy suggestions.
+    goals = models.JSONField(default=list, blank=True)
+    # When goals were picked or deliberately skipped (empty goals: the dasha-lord fallback remedies).
+    goals_chosen_at = models.DateTimeField(null=True, blank=True)
 
     class Meta(TimeStampedUUIDModel.Meta):
         indexes = [models.Index(fields=["owner", "-created_at"])]

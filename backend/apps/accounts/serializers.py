@@ -20,12 +20,16 @@ class UserSerializer(serializers.ModelSerializer):
     active_profile_id = serializers.PrimaryKeyRelatedField(
         source="active_profile", queryset=BirthProfile.objects.all(), required=False, allow_null=True)
     needs_onboarding = serializers.BooleanField(read_only=True)
+    goals = serializers.SerializerMethodField(help_text="The active chart's goals (goals belong to each chart)")
 
     class Meta:
         model = User
         fields = ["id", "email", "full_name", "is_email_verified", "date_joined",
                   "current_place", "current_place_id", "active_profile_id", "goals", "needs_onboarding"]
-        read_only_fields = ["id", "email", "is_email_verified", "date_joined", "goals"]
+        read_only_fields = ["id", "email", "is_email_verified", "date_joined"]
+
+    def get_goals(self, user) -> list[str]:
+        return list(user.active_profile.goals) if user.active_profile else []
 
     def validate_active_profile_id(self, value):
         if value is not None and value.owner_id != self.instance.pk:

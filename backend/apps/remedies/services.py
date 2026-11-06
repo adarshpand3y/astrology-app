@@ -1,4 +1,4 @@
-"""Remedy recommendations, goal seeding, progress, streaks and history."""
+"""Remedy recommendations, goal seeding, progress, streaks and history, per chart (birth profile)."""
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -23,8 +23,18 @@ ALL_DAYS = list(range(7))
 SYNC_VERSION = 1
 
 
-def active(user):
+def active(profile):
+    """The chart's remedies (not removed)."""
+    return UserRemedy.objects.filter(profile=profile, archived_at__isnull=True)
+
+
+def owned(user):
+    """Every chart's remedies of the user (not removed), for lookups by id and reminders."""
     return UserRemedy.objects.filter(user=user, archived_at__isnull=True)
+
+
+def _new(profile, **fields) -> UserRemedy:
+    return UserRemedy.objects.create(user_id=profile.owner_id, profile=profile, **fields)
 
 
 def current_lords(profile, at=None) -> tuple[str, str]:
@@ -44,16 +54,18 @@ def focus_planets(profile, md: str | None = None) -> list[str]:
     return planets
 
 
+FALLBACK_KINDS = ("mantra", "fast", "charity")  # no gemstone, as with goal suggestions
+
+
 @transaction.atomic
-def seed_for(user, profile) -> None:
-    """Fallback for accounts without goals: mantra, fast and charity for the Mahadasha lord (no
-    gemstone, as with goal suggestions)."""
-    if user.goals or UserRemedy.objects.filter(user=user).exists() or profile is None:
+def seed_for(profile, dasha: tuple[str, str] | None = None) -> None:
+    """Fallback for a chart without goals (skipped, or never set): mantra, fast and charity for its
+    Mahadasha and Antardasha lords."""
+    if profile is None or profile.goals or UserRemedy.objects.filter(profile=profile).exists():
         return
-    lord = current_lords(profile)[0]
-    for kind in ("mantra", "fast", "charity"):
-        UserRemedy.objects.get_or_create(user=user, planet=lord, kind=kind, archived_at=None,
-                                         defaults={"reminder": SEED_REMINDERS[kind]})
+    for lord in dict.fromkeys(dasha or current_lords(profile)):
+        for kind in FALLBACK_KINDS:
+            _new(profile, planet=lord, kind=kind, reminder=SEED_REMINDERS[kind])
 
 
 CHART_KIND = "mantra"  # chart remedies are each graha's beej mantra
@@ -111,8 +123,8 @@ def chart_wants(profile, at=None, dasha: tuple[str, str] | None = None) -> dict[
     return want
 
 
-def _sync_cache_key(user) -> str:
-    return f"remedy-sync:{user.pk}"
+def _sync_cache_key(profile) -> str:
+    return f"remedy-sync:{profile.pk}"
 
 
 def _sync_stamp(profile, dasha: tuple[str, str]) -> str:
@@ -120,22 +132,23 @@ def _sync_stamp(profile, dasha: tuple[str, str]) -> str:
     return f"{SYNC_VERSION}:{profile.pk}:{vedic.input_hash(profile)}:{'/'.join(dasha)}"
 
 
-def forget_sync(user) -> None:
-    """The user changed their list: the next `refresh_chart` runs the sync again."""
-    cache.delete(_sync_cache_key(user))
+def forget_sync(profile) -> None:
+    """The chart's list changed: the next `refresh_chart` runs the sync again."""
+    if profile is not None:
+        cache.delete(_sync_cache_key(profile))
 
 
-def refresh_chart(user, profile, dasha: tuple[str, str] | None = None) -> None:
+def refresh_chart(profile, dasha: tuple[str, str] | None = None) -> None:
     """`sync_chart`, skipped while the profile and the dasha lords are what the last sync saw."""
     if profile is None:
         return
     dasha = dasha or current_lords(profile)
-    if cache.get(_sync_cache_key(user)) != _sync_stamp(profile, dasha):
-        sync_chart(user, profile, dasha=dasha)
+    if cache.get(_sync_cache_key(profile)) != _sync_stamp(profile, dasha):
+        sync_chart(profile, dasha=dasha)
 
 
 @transaction.atomic
-def sync_chart(user, profile, at=None, dasha: tuple[str, str] | None = None) -> None:
+def sync_chart(profile, at=None, dasha: tuple[str, str] | None = None) -> None:
     """Keep the chart remedies (see `chart_wants`) on the list as the dasha moves on.
 
     A reason that no longer holds is dropped; a suggested remedy left with no reason and no goal is
@@ -146,7 +159,7 @@ def sync_chart(user, profile, at=None, dasha: tuple[str, str] | None = None) -> 
     dasha = dasha or current_lords(profile, at)
     want = chart_wants(profile, at, dasha)
     now = dj_tz.now()
-    rows = list(active(user).exclude(kind=UserRemedy.Kind.CUSTOM))
+    rows = list(active(profile).exclude(kind=UserRemedy.Kind.CUSTOM))
     for r in rows:
         if not r.basis:
             continue
@@ -157,7 +170,7 @@ def sync_chart(user, profile, at=None, dasha: tuple[str, str] | None = None) -> 
                 r.archived_at = now
             r.save(update_fields=["basis", "archived_at"])
     current = {(r.planet, r.kind): r for r in rows if r.archived_at is None}
-    dismissed = {(r.planet, r.kind, b) for r in UserRemedy.objects.filter(user=user, archived_at__isnull=False)
+    dismissed = {(r.planet, r.kind, b) for r in UserRemedy.objects.filter(profile=profile, archived_at__isnull=False)
                  for b in r.basis}
     for (planet, kind), reasons in want.items():
         r = current.get((planet, kind))
@@ -169,10 +182,9 @@ def sync_chart(user, profile, at=None, dasha: tuple[str, str] | None = None) -> 
             continue
         reasons = [b for b in reasons if (planet, kind, b) not in dismissed]
         if reasons:
-            UserRemedy.objects.create(user=user, planet=planet, kind=kind, basis=reasons,
-                                      reminder=SEED_REMINDERS[kind])
+            _new(profile, planet=planet, kind=kind, basis=reasons, reminder=SEED_REMINDERS[kind])
     if at is None:  # a sync for another moment says nothing about now
-        cache.set(_sync_cache_key(user), _sync_stamp(profile, dasha), 60 * 60 * 24)
+        cache.set(_sync_cache_key(profile), _sync_stamp(profile, dasha), 60 * 60 * 24)
 
 
 def house_lords(profile) -> dict[int, str] | None:
@@ -196,38 +208,51 @@ def suggestions(goals: list[str], profile) -> list[tuple[str, str, str]]:
     return out
 
 
+def goal_limit(profile, pro: bool) -> int:
+    """How many goals a chart may have: up to 3 with Pro; on the free plan 1 on the user's own chart
+    and none on the charts of others."""
+    if pro:
+        return gc.MAX_GOALS
+    return gc.FREE_GOALS if profile.relation == profile.Relation.SELF else 0
+
+
 @transaction.atomic
-def set_goals(user, profile, goals: list[str]) -> None:
-    """Save the user's goals and add the remedies they call for. Suggestions from goals the user
-    dropped are archived, unless the user edited or logged them."""
+def set_goals(profile, goals: list[str]) -> None:
+    """Save the chart's goals (empty: skipped) and add the remedies they call for. Suggestions from
+    dropped goals are archived, unless the user edited or logged them; once there are goals, so are
+    untouched dasha-lord fallback remedies (see `seed_for`)."""
     wanted = suggestions(goals, profile)
     wanted_keys = {(p, k) for p, k, _ in wanted}
-    current = {(r.planet, r.kind): r for r in active(user).exclude(kind=UserRemedy.Kind.CUSTOM)
+    current = {(r.planet, r.kind): r for r in active(profile).exclude(kind=UserRemedy.Kind.CUSTOM)
                .annotate(n_logs=Count("logs"))}
     now = dj_tz.now()
     for key, r in current.items():
-        if (r.goal and r.goal not in goals and key not in wanted_keys and not r.basis
-                and not r.edited and not r.n_logs):
+        untouched = not r.basis and not r.edited and not r.n_logs and not r.user_added and key not in wanted_keys
+        dropped = r.goal and r.goal not in goals
+        fallback = not r.goal and goals
+        if untouched and (dropped or fallback):
             r.archived_at = now
             r.save(update_fields=["archived_at"])
     for planet, kind, g in wanted:
         r = current.get((planet, kind))
         if r is None:
-            UserRemedy.objects.create(user=user, planet=planet, kind=kind, goal=g, reminder=SEED_REMINDERS[kind])
+            _new(profile, planet=planet, kind=kind, goal=g, reminder=SEED_REMINDERS[kind])
         elif r.goal not in goals:
             r.goal = g
             r.save(update_fields=["goal"])
-    user.goals = list(goals)
-    user.save(update_fields=["goals"])
-    forget_sync(user)
+    profile.goals = list(goals)
+    profile.goals_chosen_at = now
+    profile.save(update_fields=["goals", "goals_chosen_at"])
+    forget_sync(profile)
 
 
-def add_for_planet(user, planet: str, kinds=("mantra", "charity")) -> list[UserRemedy]:
-    forget_sync(user)
+def add_for_planet(profile, planet: str, kinds=("mantra", "charity")) -> list[UserRemedy]:
+    forget_sync(profile)
     out = []
     for kind in kinds:
-        obj, created = UserRemedy.objects.get_or_create(user=user, planet=planet, kind=kind, archived_at=None,
-                                                        defaults={"user_added": True})
+        obj, created = UserRemedy.objects.get_or_create(
+            profile=profile, planet=planet, kind=kind, archived_at=None,
+            defaults={"user_id": profile.owner_id, "user_added": True})
         if not created and not obj.user_added:
             obj.user_added = True  # the user asked for it, so it stays when its chart reason ends
             obj.save(update_fields=["user_added"])
@@ -243,8 +268,8 @@ def _cadence(weekdays: list[int] | None, target: int, lang: str) -> str:
 
 
 def _element(remedy: UserRemedy) -> str | None:
-    """The tattva an "element" remedy is for, from the active chart."""
-    return lagna_element(remedy.user.active_profile) if remedy.kind == UserRemedy.Kind.ELEMENT else None
+    """The tattva an "element" remedy is for, from its chart."""
+    return lagna_element(remedy.profile) if remedy.kind == UserRemedy.Kind.ELEMENT else None
 
 
 def effective(remedy: UserRemedy, lang: str) -> dict:
@@ -287,8 +312,10 @@ def is_due(remedy: UserRemedy, day: date, info: dict | None = None) -> bool:
     return weekdays is None or (day.weekday() + 1) % 7 in weekdays  # Sunday = 0
 
 
-def completed_days(user) -> set[date]:
-    return set(RemedyLog.objects.filter(remedy__user=user, completed=True).values_list("date", flat=True))
+def completed_days(profile) -> set[date]:
+    if profile is None:
+        return set()
+    return set(RemedyLog.objects.filter(remedy__profile=profile, completed=True).values_list("date", flat=True))
 
 
 def _best_run(days: set[date]) -> int:
@@ -300,8 +327,8 @@ def _best_run(days: set[date]) -> int:
     return best
 
 
-def streak(user, today: date) -> dict:
-    days = completed_days(user)
+def streak(profile, today: date) -> dict:
+    days = completed_days(profile)
     current = 0
     cursor = today if today in days else today - timedelta(days=1)
     while cursor in days:
@@ -313,13 +340,14 @@ def streak(user, today: date) -> dict:
     return {"current": current, "best": max(_best_run(days), current), "week": week}
 
 
-def history(user, today: date, days: int = 365) -> dict:
-    """Per-day remedies done vs due for the last `days` days (archived remedies included)."""
+def history(profile, today: date, days: int = 365) -> dict:
+    """Per-day remedies done vs due on a chart for the last `days` days (archived remedies included)."""
     start = today - timedelta(days=days - 1)
-    done = dict(RemedyLog.objects.filter(remedy__user=user, completed=True, date__range=(start, today))
+    remedies = UserRemedy.objects.filter(profile=profile) if profile else UserRemedy.objects.none()
+    done = dict(RemedyLog.objects.filter(remedy__in=remedies, completed=True, date__range=(start, today))
                 .values("date").annotate(n=Count("id")).values_list("date", "n"))
     due = {start + timedelta(days=i): 0 for i in range(days)}
-    for r in UserRemedy.objects.filter(user=user).select_related("user__active_profile").prefetch_related("logs"):
+    for r in remedies.select_related("profile").prefetch_related("logs"):
         info = effective(r, "en")
         if info["once"]:  # counts only on the day it was done, not every day before
             d = done_on(r)
@@ -345,8 +373,8 @@ def history(user, today: date, days: int = 365) -> dict:
 
 def serialize(remedy: UserRemedy, today: date, lang: str) -> dict:
     info = effective(remedy, lang)
-    # Gau seva names the grahas it is for, and the tattva practice its element, from the active chart.
-    gandmool = gandmool_birth_planets(remedy.user.active_profile) if "gandmool_birth" in remedy.basis else []
+    # Gau seva names the grahas it is for, and the tattva practice its element, from its chart.
+    gandmool = gandmool_birth_planets(remedy.profile) if "gandmool_birth" in remedy.basis else []
     element = _element(remedy)
     log = next((l for l in remedy.logs.all() if l.date == today), None)
     monday = today - timedelta(days=today.weekday())

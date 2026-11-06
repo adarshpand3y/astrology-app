@@ -1,14 +1,20 @@
-// "Planets right now" on Home: a table of every graha (sign, house, degree, nakshatra) with
-// Retro / Combust / Exalted / Debilitated / Gandmool badges and filters. Tapping a graha in one of those
-// conditions opens what to do and what to avoid while it lasts.
+// "Planetary transit chart" and "Planetary transits" on Home: the grahas now in a chart, then a
+// table of every graha (sign, house, degree, nakshatra) with Retro / Combust / Exalted / Debilitated /
+// Gandmool badges and filters. Tapping a graha in one of those conditions opens what to do and what to
+// avoid while it lasts.
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { brand } from '../config/env';
 import { useI18n } from '../i18n';
 import { GLYPH } from '../i18n/terms';
+import { usePrefs } from '../state/PrefsContext';
 import { useTheme } from '../theme';
 import { shortDate } from '../utils/format';
-import { Card, Row, T } from './ui';
+import { NorthChart, SouthChart } from './charts/Charts';
+import { Card, Row, Seg, T } from './ui';
+
+const SIGN_EN = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 
 const pad2 = (n) => String(n).padStart(2, '0');
 /** 3.4 -> "3°24′" (truncated, never rounds up to the next degree). */
@@ -30,6 +36,18 @@ function Badge({ label, tone, size = 9.5 }) {
     <View style={{ backgroundColor: k.tint, borderRadius: 20, paddingVertical: 2, paddingHorizontal: 7 }}>
       <Text style={[th.font.ui(700), { fontSize: size, color: k.text }]}>{label}</Text>
     </View>
+  );
+}
+
+/** Green "● Live" tag beside a heading: the positions are as of now. */
+function LiveBadge() {
+  const th = useTheme();
+  const { t } = useI18n();
+  return (
+    <Row gap={5} style={{ backgroundColor: th.kind.good.tint, borderRadius: 10, paddingVertical: 3, paddingHorizontal: 8 }}>
+      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: th.kind.good.solid }} />
+      <Text style={[th.font.ui(600), { fontSize: 10.5, color: th.kind.good.text }]}>{t('home.live')}</Text>
+    </Row>
   );
 }
 
@@ -63,7 +81,51 @@ function Guide({ g }) {
   );
 }
 
-export function SkyNow({ sky }) {
+/**
+ * The grahas now in a North or South Indian chart (the user's chart style). Houses run from the
+ * chart's own lagna (Moon sign without a birth time) to read transits over it, or from the lagna
+ * rising now where the user is.
+ */
+function TransitChart({ sky, city }) {
+  const th = useTheme();
+  const { t, tr } = useI18n();
+  const { prefs } = usePrefs();
+  const [mode, setMode] = useState('natal'); // natal | now
+  const lagna = sky.lagna;
+  if (!lagna) return null;
+  const moonBasis = sky.reference.basis === 'moon';
+  const asc = mode === 'natal' ? lagna.natal : lagna.now;
+  const varga = {
+    ascendant: { sign_index: asc.sign_index },
+    planets: sky.planets.map((p) => ({
+      code: p.planet, sign_index: p.sign_index, house: ((p.sign_index - asc.sign_index + 12) % 12) + 1,
+      retrograde: p.retrograde, combust: p.combust, dignity: p.dignity,
+    })),
+  };
+  // Degrees beside each graha, and beside "Asc" when the lagna's degree is known.
+  const degrees = asc.degree == null ? null
+    : { ...Object.fromEntries(sky.planets.map((p) => [p.planet, p.degree])), Asc: asc.degree };
+  const style = brand.features.southIndianChart ? prefs.chartStyle : 'north';
+  const sign = tr('sign', SIGN_EN[asc.sign_index - 1]);
+  return (
+    <Card radius={20} pad={14} shadow="card" style={{ marginBottom: 12 }}>
+      <Seg options={[
+        { value: 'natal', label: t(moonBasis ? 'home.skyLagnaMoon' : 'home.skyLagnaNatal') },
+        { value: 'now', label: t('home.skyLagnaNow') },
+      ]} value={mode} onChange={setMode} style={{ marginBottom: 12 }} />
+      {style === 'north'
+        ? <NorthChart varga={varga} degrees={degrees} />
+        : <SouthChart varga={varga} degrees={degrees} centerLabel={t('home.skyChartCenter')}
+            centerSub={mode === 'now' ? t('home.skyLagnaNow') : t(moonBasis ? 'home.skyLagnaMoon' : 'home.skyLagnaNatal')} />}
+      <T v="tiny" style={{ textAlign: 'center', marginTop: 10, lineHeight: 15, color: th.c.ink2 }}>
+        {mode === 'now' ? t('home.skyChartNowNote', { sign, city })
+          : t(moonBasis ? 'home.skyChartMoonNote' : 'home.skyChartNatalNote', { sign })}
+      </T>
+    </Card>
+  );
+}
+
+export function SkyNow({ sky, city }) {
   const th = useTheme();
   const { t, tr, lang } = useI18n();
   const [filter, setFilter] = useState('all');
@@ -96,12 +158,15 @@ export function SkyNow({ sky }) {
     <View style={{ marginTop: 22 }}>
       <Row style={{ justifyContent: 'space-between', marginHorizontal: 2, marginBottom: 11 }}>
         <T v="section">{t('home.skyTitle')}</T>
-        <Row gap={5} style={{ backgroundColor: th.kind.good.tint, borderRadius: 10, paddingVertical: 3, paddingHorizontal: 8 }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: th.kind.good.solid }} />
-          <Text style={[th.font.ui(600), { fontSize: 10.5, color: th.kind.good.text }]}>{t('home.liveTransit')}</Text>
-        </Row>
+        <LiveBadge />
       </Row>
 
+      <TransitChart sky={sky} city={city} />
+
+      <Row style={{ justifyContent: 'space-between', marginHorizontal: 2, marginTop: 10, marginBottom: 11 }}>
+        <T v="section">{t('home.skyTableTitle')}</T>
+        <LiveBadge />
+      </Row>
       <Card radius={20} pad={0} shadow="card" style={{ overflow: 'hidden' }}>
         <Row gap={6} style={{ flexWrap: 'wrap', paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: th.c.hair }}>
           {pill('all', t('home.skyAll', { n: counts.all }))}

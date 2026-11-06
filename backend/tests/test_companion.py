@@ -91,6 +91,12 @@ def test_home(client, lang):
     assert [f["days_away"] for f in fest] == sorted(f["days_away"] for f in fest) and 0 <= fest[0]["days_away"] <= 30
     assert any(f["key"].startswith("ekadashi") for f in fest) or fest[-1]["days_away"] <= 16
     sky = d["sky"]
+    # The transit chart: each graha's sign, the chart's own lagna and the lagna rising now.
+    assert all(1 <= p["sign_index"] <= 12 for p in sky["planets"])
+    natal_l, now_l = sky["lagna"]["natal"], sky["lagna"]["now"]
+    assert 1 <= natal_l["sign_index"] <= 12 and 0 <= natal_l["degree"] < 30  # birth time known
+    assert 1 <= now_l["sign_index"] <= 12 and 0 <= now_l["degree"] < 30
+    assert all(p["house"] == (p["sign_index"] - natal_l["sign_index"]) % 12 + 1 for p in sky["planets"])
     assert [p["planet"] for p in sky["planets"]] == ["Su", "Mo", "Ma", "Me", "Ju", "Ve", "Sa", "Ra", "Ke"]
     assert all(0 <= p["degree"] < 30 for p in sky["planets"])  # degree within the sign
     by = {p["planet"]: p for p in sky["planets"]}
@@ -223,9 +229,9 @@ def test_chart_remedies(client):
     md, ad = vedic._vimshottari(profile).current(timezone.now(), levels=2)[:2]
     later = ad.end + timedelta(days=1)
     nxt = vedic._vimshottari(profile).current(later, levels=2)[1].lord
-    before = {(r.planet, tuple(r.basis)) for r in rs.active(user) if r.basis}
-    rs.sync_chart(user, profile, at=later)
-    after = {r.planet: r.basis for r in rs.active(user) if r.basis}
+    before = {(r.planet, tuple(r.basis)) for r in rs.active(profile) if r.basis}
+    rs.sync_chart(profile, at=later)
+    after = {r.planet: r.basis for r in rs.active(profile) if r.basis}
     assert "antardasha" in after[nxt]
     old_only = [p for p, b in before if b == ("antardasha",) and p != nxt]
     for p in old_only:
@@ -255,7 +261,7 @@ def test_gandmool_moon_adds_the_nakshatra_lords_mantra(client, monkeypatch):
 
     monkeypatch.setattr(vedic, "get_chart", chart_with_moon_in(9, "Me"))  # Ashlesha
     assert rs.chart_reasons(profile).get("Me", [])[-1] == "gandmool"
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     budh = client.get("/api/v1/remedies/").data["remedies"]
     budh = next(x for x in budh if x["planet"] == "Me" and x["kind"] == "mantra")
     assert "gandmool" in budh["basis"] and "Gandmool" in budh["basis_label"]
@@ -290,26 +296,26 @@ def test_gandmool_birth_adds_gau_seva(client, monkeypatch):
         return [x for x in client.get("/api/v1/remedies/").data["remedies"] if x["kind"] == "seva"]
 
     monkeypatch.setattr(vedic, "get_chart", chart_with({"Sa": 19, "Ju": 1}))  # Mula, Ashwini
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     [r] = seva()
     assert r["planet"] == "" and r["basis"] == ["gandmool_birth"] and r["goal_short"] == "Gandmool"
     assert r["due_today"] and r["weekdays"] is None and r["target"] == 1  # daily
     assert "15 minutes near a cow" in r["how"] and "hara chara" in r["title"]
     assert r["basis_label"] == "For grahas born in Gandmool nakshatras: Guru, Shani"  # chart order
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     assert len(seva()) == 1  # never doubled
 
     # Removed by the user: not added back.
     assert client.delete(f"/api/v1/remedies/{r['id']}/").status_code == 204
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     assert not seva()
 
     # No graha in a Gandmool nakshatra: no seva (and a kept one is retired).
     UserRemedy.objects.filter(user=user, kind="seva").delete()
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     assert len(seva()) == 1
     monkeypatch.setattr(vedic, "get_chart", chart_with({}))
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     assert not seva()
     assert UserRemedy.objects.get(user=user, kind="seva").archived_at is not None
 
@@ -333,7 +339,7 @@ def test_gandmool_moon_adds_a_one_time_shanti_puja(client, monkeypatch):
         return chart
 
     monkeypatch.setattr(vedic, "get_chart", fake)
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     today = date.today()
     tomorrow = (today + timedelta(days=1)).isoformat()
 
@@ -352,7 +358,7 @@ def test_gandmool_moon_adds_a_one_time_shanti_puja(client, monkeypatch):
     assert p["due_today"] and p["today"]["completed"] and p["done_on"] == today.isoformat()  # shows as done today
     [p] = puja(tomorrow)
     assert not p["due_today"] and p["done_on"] == today.isoformat()  # and is never due again
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     assert len(puja(tomorrow)) == 1
 
     # The heatmap counts it on the day it was done only.
@@ -404,7 +410,7 @@ def test_lagna_element_practice_on_the_free_plan(client, monkeypatch):
     # No birth time, no lagna: the practice is retired (its history stays).
     profile.time_known = False
     profile.save()
-    rs.sync_chart(user, profile)
+    rs.sync_chart(profile)
     assert not element_rows()
 
 
@@ -486,7 +492,7 @@ def test_alert_feed_updates_chart_remedies(client):
 
     user = User.objects.get(email="ananya@example.com")
     UserRemedy.objects.filter(user=user).exclude(basis=[]).delete()  # as if never synced
-    rs.forget_sync(user)
+    rs.forget_sync(user.active_profile)
     items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
     reasons = {b for r in UserRemedy.objects.filter(user=user, archived_at__isnull=True) for b in r.basis}
     assert reasons == {"lagna", "moon", "mahadasha", "antardasha", "gandmool_birth", "lagna_element"}
@@ -504,10 +510,78 @@ def test_free_plan_has_one_goal(client):
 
 def test_goals_validation(client):
     make_pro(client)
-    assert client.put("/api/v1/remedies/goals/", {"goals": []}, format="json").status_code == 400
     assert client.put("/api/v1/remedies/goals/", {"goals": ["marriage", "career", "wealth", "health"]},
                       format="json").status_code == 400
     assert client.put("/api/v1/remedies/goals/", {"goals": ["fame"]}, format="json").status_code == 400
+
+
+def test_goals_and_remedies_are_per_chart(client, places):
+    """Each chart has its own goals and remedy list. On the free plan only your own chart takes a goal;
+    skipping goals gives a chart its Mahadasha and Antardasha lords' mantra, fast and charity."""
+    from apps.profiles.models import BirthProfile
+    from apps.remedies import services as rs
+
+    blr, _ = places
+    user = User.objects.get(email="ananya@example.com")
+    me = BirthProfile.objects.get(owner=user)
+    r = client.post("/api/v1/profiles/", {"name": "Ravi Rao", "relation": "family", "birth_date": "1962-03-02",
+                                          "birth_time": "18:20", "place_id": blr.id}, format="json")
+    assert r.status_code == 201, r.data
+    ravi = BirthProfile.objects.get(pk=r.data["id"])
+    q = f"?profile={ravi.pk}"
+
+    g = client.get(f"/api/v1/remedies/goals/{q}").data
+    assert g["profile"]["name"] == "Ravi Rao" and g["max"] == 0 and g["chosen"] is False and g["goals"] == []
+    r = client.put(f"/api/v1/remedies/goals/{q}", {"goals": ["career"]}, format="json")
+    assert r.status_code == 403 and r.data["error"]["code"] == "pro_required"  # free: others' charts need Pro
+
+    # Skipped: the dasha lords' remedies, and nothing from (or to) the user's own chart.
+    r = client.put(f"/api/v1/remedies/goals/{q}", {"goals": []}, format="json")
+    assert r.status_code == 200 and r.data["profile"]["name"] == "Ravi Rao" and r.data["goals"] == []
+    md, ad = rs.current_lords(ravi)
+    fallback = {(x["planet"], x["kind"]) for x in r.data["remedies"] if not x["goal"] and not x["basis"]}
+    assert {(p, k) for p in (md, ad) for k in ("mantra", "fast", "charity")} - {(p, "mantra") for p in (md, ad)} \
+        <= fallback
+    assert not any(x["goal"] for x in r.data["remedies"])
+    ravi.refresh_from_db()
+    assert ravi.goals_chosen_at is not None
+    mine = client.get("/api/v1/remedies/").data
+    assert mine["profile"]["id"] == str(me.pk) and {x["goal"] for x in mine["remedies"] if x["goal"]} == {"marriage"}
+    assert not set(x["id"] for x in mine["remedies"]) & set(x["id"] for x in r.data["remedies"])
+
+    # Done on Ravi's chart: his streak, not the user's.
+    rid = r.data["remedies"][0]["id"]
+    assert client.post(f"/api/v1/remedies/{rid}/progress/", {"completed": True}, format="json").data["streak"]["current"] == 1
+    assert client.get("/api/v1/remedies/").data["streak"]["current"] == 0
+
+    # With Pro, Ravi gets goals; untouched fallback remedies make way, the user's own goals stay.
+    make_pro(client)
+    assert client.get(f"/api/v1/remedies/goals/{q}").data["max"] == 3
+    r = client.put(f"/api/v1/remedies/goals/{q}", {"goals": ["career"]}, format="json")
+    assert r.status_code == 200 and [x["key"] for x in r.data["goals"]] == ["career"]
+    assert {x["goal"] for x in r.data["remedies"] if x["goal"]} == {"career"}
+    assert any(x["id"] == rid for x in r.data["remedies"])  # logged, so kept
+    assert client.get("/api/v1/auth/me/").data["goals"] == ["marriage"]  # the active chart's
+    me.refresh_from_db()
+    assert me.goals == ["marriage"]
+
+    # Switching charts switches the Remedies tab; deleting a chart removes its remedies.
+    client.patch("/api/v1/auth/me/", {"active_profile_id": str(ravi.pk)}, format="json")
+    assert client.get("/api/v1/remedies/").data["profile"]["name"] == "Ravi Rao"
+    assert client.get("/api/v1/auth/me/").data["goals"] == ["career"]
+    assert client.delete(f"/api/v1/profiles/{ravi.pk}/").status_code == 204
+    assert not rs.owned(user).exclude(profile=me).exists()
+
+
+def test_reminder_names_each_chart(client, places):
+    """The daily remedy reminder covers every chart, naming them when more than one has remedies due."""
+    blr, _ = places
+    r = client.post("/api/v1/profiles/", {"name": "Ravi Rao", "relation": "family", "birth_date": "1962-03-02",
+                                          "birth_time": "18:20", "place_id": blr.id}, format="json")
+    client.put(f"/api/v1/remedies/goals/?profile={r.data['id']}", {"goals": []}, format="json")
+    items = client.get("/api/v1/alerts/schedule/", {"days": 2}).data["items"]
+    bodies = [i["body"] for i in items if i["category"] == "remedy"]
+    assert bodies and all("Ananya: " in b and "Ravi: " in b for b in bodies)
 
 
 def test_changing_goals_keeps_edited_and_logged(client):
@@ -662,6 +736,23 @@ def test_vrat_alerts(client):
     assert client.patch("/api/v1/alerts/prefs/", {"vrat": False}, format="json").data["vrat"] is False
     items = client.get("/api/v1/alerts/schedule/", {"days": 14}).data["items"]
     assert not [i for i in items if i["category"] == "vrat"]
+
+
+def test_pro_alerts_are_off_on_the_free_plan(client):
+    """Transit and Sade Sati alerts read as off for a free account (and none are sent); with Pro the
+    stored default comes back on, and it reads as off again once Pro ends."""
+    prefs = client.get("/api/v1/alerts/prefs/").data
+    assert not prefs["is_pro"] and prefs["transit"] is False and prefs["sade_sati"] is False
+    assert client.patch("/api/v1/alerts/prefs/", {"rahu": False}, format="json").data["transit"] is False
+    items = client.get("/api/v1/alerts/schedule/", {"days": 14}).data["items"]
+    assert not {"transit", "sade_sati"} & {i["category"] for i in items}
+
+    make_pro(client)
+    assert client.get("/api/v1/alerts/prefs/").data["transit"] is True  # the Pro default
+    sub = subscription_for(User.objects.get(email="ananya@example.com"))
+    sub.plan = "free"
+    sub.save()
+    assert client.get("/api/v1/alerts/prefs/").data["transit"] is False
 
 
 def test_alerts(client):

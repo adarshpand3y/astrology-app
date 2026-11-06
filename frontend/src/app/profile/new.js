@@ -14,10 +14,11 @@ export default function NewProfile() {
     <ProfileForm
       title={t('form.newTitle')}
       onSubmit={async (body) => {
-        await profilesApi.create(body);
+        const p = await profilesApi.create(body);
         invalidate('profiles');
         if (!user?.active_profile_id) await refreshUser(); // first chart becomes the active one
-        router.back();
+        // Goals belong to each chart: pick this one's now, or skip.
+        router.replace({ pathname: '/goals', params: { profile: p.id, isNew: '1' } });
       }}
     />
   );

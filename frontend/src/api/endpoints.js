@@ -59,8 +59,10 @@ export const remediesApi = {
   update: (id, patch, today) => api(`/remedies/${id}/`, { method: 'PATCH', body: patch, query: { today } }),
   remove: (id) => api(`/remedies/${id}/`, { method: 'DELETE' }),
   progress: (id, body) => post(`/remedies/${id}/progress/`, body),
-  goals: () => api('/remedies/goals/'),
-  setGoals: (goals, today) => api('/remedies/goals/', { method: 'PUT', body: { goals }, query: { today } }),
+  /** Goals of a chart (`profile` id; the active chart when omitted). */
+  goals: (profile) => api('/remedies/goals/', { query: { profile } }),
+  /** Set a chart's goals; `[]` skips them (the chart gets its dasha lords' remedies). */
+  setGoals: (goals, today, profile) => api('/remedies/goals/', { method: 'PUT', body: { goals }, query: { today, profile } }),
   history: (today, days = 365) => api('/remedies/history/', { query: { today, days } }),
 };
 

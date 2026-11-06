@@ -22,6 +22,7 @@ from apps.vedic.engine.constants import (
     DEBILITATION, EXALTATION, GANDMOOL_NAKSHATRAS, NAKSHATRA_SPAN, NAKSHATRAS, PADA_SPAN, SIGNS, SIGNS_SANSKRIT,
 )
 from apps.vedic.engine.decision import rank_windows
+from apps.vedic.engine.ephemeris import compute_snapshot
 from apps.vedic.engine.muhurta import compute_muhurtas, find
 from apps.vedic.engine.panchang import tithi_name
 
@@ -224,7 +225,8 @@ def sky(ctx: DayContext, n: dict, positions: dict) -> dict:
                 until = st.get(f"{cond}_until") if cond in ("retrograde", "combust") and st[cond] else None
                 guide.append({"condition": cond, **text, "until": until})
         planets.append({
-            "planet": code, "sign": SIGNS[sign], "sign_sanskrit": SIGNS_SANSKRIT[sign], "degree": lon % 30,
+            "planet": code, "sign": SIGNS[sign], "sign_sanskrit": SIGNS_SANSKRIT[sign], "sign_index": sign + 1,
+            "degree": lon % 30,
             "nakshatra": NAKSHATRAS[nak], "pada": int((lon % NAKSHATRA_SPAN) // PADA_SPAN) + 1,
             "house": house, "dignity": dignity, "retrograde": active["retrograde"], "combust": active["combust"],
             "gandmool": active["gandmool"],
@@ -236,7 +238,27 @@ def sky(ctx: DayContext, n: dict, positions: dict) -> dict:
         # What the houses are counted from: the lagna, or the Moon sign when the birth time is unknown.
         "reference": {"basis": "lagna" if ctx.profile.time_known else "moon", "sign": SIGNS[n["ref_sign"]],
                       "ayanamsa": ayanamsa},
+        # For the transit chart: drawn from the chart's own lagna (the reference above), or from the
+        # lagna rising now where the user is.
+        "lagna": {
+            "natal": {"sign_index": n["ref_sign"] + 1,
+                      "degree": n["chart"]["lagna"]["degree"] if ctx.profile.time_known else None},
+            "now": rising_lagna(ctx, ayanamsa),
+        },
     }
+
+
+def rising_lagna(ctx: DayContext, ayanamsa: str) -> dict:
+    """The sidereal lagna rising now at the user's place; cached for a few minutes (it moves about a
+    degree every four)."""
+    slot = ctx.now.astimezone(UTC).replace(second=0, microsecond=0)
+    slot = slot.replace(minute=slot.minute - slot.minute % 3)
+
+    def compute():
+        asc = compute_snapshot(slot, ctx.lat, ctx.lon, ayanamsa).ascendant
+        return {"sign_index": int(asc // 30) + 1, "degree": asc % 30}
+
+    return cache.get_or_set(f"lagna-now:{ayanamsa}:{ctx.lat:.2f}:{ctx.lon:.2f}:{slot:%Y%m%d%H%M}", compute, 600)
 
 
 # --- Day timeline ---------------------------------------------------------------------

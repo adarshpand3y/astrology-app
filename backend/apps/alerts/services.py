@@ -72,8 +72,10 @@ def _period_items(mu: dict, now: datetime, lang: str, parts: set[str]) -> list[d
 
 
 def _remedy_item(remedies: list, d, prefs, lang: str, tz) -> dict | None:
-    """One reminder listing the remedies due on `d` (reminder on, not already done that day)."""
+    """One reminder listing the remedies due on `d` (reminder on, not already done that day), across
+    the user's charts; with more than one chart due, each is named ("Ravi: Shani beej mantra")."""
     due = []
+    charts = {r.profile_id for r in remedies if rs.is_due(r, d)}
     for r in remedies:
         info = rs.effective(r, lang)
         if not rs.is_due(r, d, info) or any(l.date == d and l.completed for l in r.logs.all()):
@@ -83,6 +85,8 @@ def _remedy_item(remedies: list, d, prefs, lang: str, tz) -> dict | None:
             title = f"{rc.KIND_LABEL[lang]['charity']}: {title}"
         elif r.kind == "mantra" and info.get("target", 1) > 1:
             title = f"{title} ({info['target']}×)"
+        if len(charts) > 1 and r.profile:
+            title = f"{r.profile.name.split(' ')[0]}: {title}"
         due.append(title)
     if not due:
         return None
@@ -116,8 +120,10 @@ def schedule(ctx: DayContext, days: int) -> list[dict]:
     v = vedic._vimshottari(profile) if profile else None
     # The phone fetches this feed whenever the app opens, so bring the chart remedies up to date
     # here too (a new Antardasha lord's mantra) instead of waiting for a visit to Remedies.
-    rs.refresh_chart(user, profile)
-    remedies = list(rs.active(user).filter(reminder=True).prefetch_related("logs")) if prefs.remedies else []
+    rs.refresh_chart(profile)
+    # Reminders cover every chart the user follows remedies for, the active one first.
+    remedies = sorted(rs.owned(user).filter(reminder=True).select_related("profile").prefetch_related("logs"),
+                      key=lambda r: r.profile_id != (profile.pk if profile else None)) if prefs.remedies else []
 
     for i in range(days):
         d = ctx.day + timedelta(days=i)

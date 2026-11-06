@@ -4,9 +4,6 @@
 // expo-notifications is loaded lazily: Expo Go on Android (SDK 53+) no longer ships
 // its native module, and a top-level import would crash the app there. In that
 // runtime alerts are simply unavailable; a development / store build delivers them.
-//
-// Every step is written to an in-memory log so the "Scheduled notifications" screen
-// (non-production builds) can show what happened.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { getCalendars } from 'expo-localization';
@@ -21,26 +18,9 @@ const MAX_SCHEDULED = 60; // iOS allows 64 pending local notifications
 const IS_EXPO_GO_ANDROID =
   Platform.OS === 'android' && Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-// --- Activity log ---------------------------------------------------------------------
-const LOG_MAX = 100;
-const log = [];
-const listeners = new Set();
-
-function note(level, message) {
-  log.unshift({ id: `${Date.now()}-${Math.random()}`, at: Date.now(), level, message });
-  if (log.length > LOG_MAX) log.pop();
-  listeners.forEach((fn) => fn());
-}
-
-/** Newest first: `{ id, at, level: 'info' | 'ok' | 'warn' | 'error', message }`. */
-export function getLog() {
-  return log.slice();
-}
-
-/** Calls `fn` whenever the log changes; returns an unsubscribe function. */
-export function subscribeLog(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
+/** Problems worth knowing about while developing; silent in release builds. */
+function warn(message) {
+  if (__DEV__) console.warn(`[notifications] ${message}`);
 }
 
 const errText = (e) => e?.message || String(e);
@@ -49,7 +29,7 @@ const errText = (e) => e?.message || String(e);
 const pad = (n) => String(n).padStart(2, '0');
 
 /** "15:12" or "3:12 PM" per the phone's 12/24-hour setting, in the phone's timezone. */
-export function deviceClock(value) {
+function deviceClock(value) {
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return '';
   let h24 = false;
@@ -59,7 +39,7 @@ export function deviceClock(value) {
 }
 
 /** Alert text from the server refers to times as {start} / {end}; fill them for this phone. */
-export function fillTimes(text, times) {
+function fillTimes(text, times) {
   return (text || '').replace(/\{(\w+)\}/g, (m, key) => (times?.[key] ? deviceClock(times[key]) : m));
 }
 
@@ -70,7 +50,7 @@ function load() {
   if (mod !== undefined) return mod;
   if (IS_EXPO_GO_ANDROID || Platform.OS === 'web') {
     mod = null;
-    note('warn', `Notifications unavailable in this runtime (${IS_EXPO_GO_ANDROID ? 'Expo Go on Android' : Platform.OS}).`);
+    warn(`Notifications unavailable in this runtime (${IS_EXPO_GO_ANDROID ? 'Expo Go on Android' : Platform.OS}).`);
     return mod;
   }
   try {
@@ -80,12 +60,9 @@ function load() {
         shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false,
       }),
     });
-    // Only fires while the app is open; delivery in the background still happens, unlogged.
-    mod.addNotificationReceivedListener((n) => note('ok', `Delivered: ${n.request.content.title}`));
-    note('info', 'Notification module loaded.');
   } catch (e) {
     mod = null;
-    note('error', `Could not load expo-notifications: ${errText(e)}`);
+    warn(`Could not load expo-notifications: ${errText(e)}`);
   }
   return mod;
 }
@@ -103,18 +80,6 @@ export async function notificationsAllowed() {
     return status === 'granted';
   } catch {
     return false;
-  }
-}
-
-/** Raw permission state for the diagnostics screen. */
-export async function permissionDetails() {
-  const N = load();
-  if (!N) return { supported: false };
-  try {
-    const p = await N.getPermissionsAsync();
-    return { supported: true, status: p.status, canAskAgain: p.canAskAgain };
-  } catch (e) {
-    return { supported: true, status: 'error', error: errText(e) };
   }
 }
 
@@ -144,16 +109,11 @@ export async function requestPermission() {
     await ensureChannels(N);
     const current = await N.getPermissionsAsync();
     if (current.status === 'granted') return true;
-    if (!current.canAskAgain) {
-      note('warn', 'Permission denied and Android won\'t ask again; enable notifications in system settings.');
-      return false;
-    }
-    note('info', 'Asking for notification permission…');
+    if (!current.canAskAgain) return false; // denied, and Android won't ask again
     const { status } = await N.requestPermissionsAsync();
-    note(status === 'granted' ? 'ok' : 'warn', `Permission ${status}.`);
     return status === 'granted';
   } catch (e) {
-    note('error', `Permission request failed: ${errText(e)}`);
+    warn(`Permission request failed: ${errText(e)}`);
     return false;
   }
 }
@@ -163,7 +123,7 @@ export async function requestPermission() {
 // their cancel + schedule steps and leave duplicates behind.
 let syncChain = Promise.resolve();
 
-/** Replace all scheduled alerts with the backend's upcoming feed (test alerts are kept). */
+/** Replace all scheduled alerts with the backend's upcoming feed. */
 export function syncSchedule() {
   const run = syncChain.then(doSync, doSync);
   syncChain = run;
@@ -174,16 +134,11 @@ async function doSync() {
   const N = load();
   if (!N) return false;
   try {
-    if (!(await notificationsAllowed())) {
-      note('warn', 'Sync skipped: notification permission not granted.');
-      return false;
-    }
-    note('info', 'Sync: fetching the alert feed…');
+    if (!(await notificationsAllowed())) return false;
     const { items } = await alertsApi.schedule(7);
     await ensureChannels(N); // alerts on a missing channel are silently dropped
     const existing = await N.getAllScheduledNotificationsAsync();
-    const stale = existing.filter((r) => !r.content.data?.test);
-    await Promise.all(stale.map((r) => N.cancelScheduledNotificationAsync(r.identifier)));
+    await Promise.all(existing.map((r) => N.cancelScheduledNotificationAsync(r.identifier)));
     const now = Date.now();
     const upcoming = items.filter((i) => Date.parse(i.at) > now + 5000).slice(0, MAX_SCHEDULED);
     for (const item of upcoming) {
@@ -195,62 +150,9 @@ async function doSync() {
         trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: new Date(item.at), channelId: channelFor(item.category) },
       });
     }
-    const counts = {};
-    upcoming.forEach((i) => { counts[i.category] = (counts[i.category] || 0) + 1; });
-    const summary = Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(', ') || 'nothing upcoming';
-    note('ok', `Sync done: feed had ${items.length}, cancelled ${stale.length}, scheduled ${upcoming.length} (${summary}).`);
     return true;
   } catch (e) {
-    note('error', `Sync failed: ${errText(e)}`);
-    return false;
-  }
-}
-
-/** Everything the OS currently has queued, soonest first. */
-export async function listScheduled() {
-  const N = load();
-  if (!N) return [];
-  const requests = await N.getAllScheduledNotificationsAsync();
-  return requests
-    .map((r) => {
-      const t = r.trigger || {};
-      // Android reports a date trigger as { type: 'date', value: ms }; iOS may use `date`.
-      const raw = t.value ?? t.date ?? t.timestamp;
-      const at = raw == null ? null : new Date(typeof raw === 'number' ? raw : Date.parse(raw));
-      return {
-        id: r.identifier, title: r.content.title, body: r.content.body, at,
-        category: r.content.data?.category || (r.content.data?.test ? 'test' : '?'),
-        channel: t.channelId || null,
-      };
-    })
-    .sort((a, b) => (a.at?.getTime() ?? Infinity) - (b.at?.getTime() ?? Infinity));
-}
-
-/** Test alert: delivered now (`delaySeconds` 0) or after a delay, through the real scheduler. */
-export async function sendTestNotification(delaySeconds = 0) {
-  const N = load();
-  if (!N) return false;
-  if (!(await requestPermission())) return false;
-  const at = new Date(Date.now() + delaySeconds * 1000);
-  const content = {
-    title: delaySeconds ? '🔔 Test alert (scheduled)' : '🔔 Test alert',
-    body: delaySeconds
-      ? `Scheduled at ${new Date().toLocaleTimeString()} for ${at.toLocaleTimeString()}.`
-      : `Sent at ${new Date().toLocaleTimeString()}.`,
-    data: { category: 'test', test: true },
-  };
-  try {
-    await N.scheduleNotificationAsync({
-      content,
-      // null = deliver immediately; a date trigger goes through the same path as real alerts.
-      trigger: delaySeconds
-        ? { type: N.SchedulableTriggerInputTypes.DATE, date: at, channelId: 'default' }
-        : (Platform.OS === 'android' ? { channelId: 'default' } : null),
-    });
-    note('ok', delaySeconds ? `Test alert scheduled for ${at.toLocaleTimeString()}.` : 'Test alert sent.');
-    return true;
-  } catch (e) {
-    note('error', `Test alert failed: ${errText(e)}`);
+    warn(`Sync failed: ${errText(e)}`);
     return false;
   }
 }
@@ -268,11 +170,7 @@ export async function setupNotifications(texts) {
   if (!load()) return false;
   const ok = await requestPermission();
   if (!ok) return false;
-  const exact = canScheduleExactAlarms();
-  note(exact ? 'ok' : 'warn', exact
-    ? 'Exact alarms allowed: alerts fire on time.'
-    : 'Exact alarms off: Android may hold alerts back, especially while the phone is idle.');
-  if (!exact) await promptExactAlarmsOnce(texts);
+  if (!canScheduleExactAlarms()) await promptExactAlarmsOnce(texts);
   return true;
 }
 
@@ -311,7 +209,6 @@ export function onNotificationOpened(open) {
     if (key === lastOpened) return;
     lastOpened = key;
     const route = routeForNotification(request.content.data);
-    note('info', `Opened from notification "${request.content.title}"${route ? ` → ${route}` : ''}.`);
     if (route) open(route);
     N.clearLastNotificationResponseAsync().catch(() => {}); // don't act on it again next launch
   };

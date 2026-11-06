@@ -137,6 +137,30 @@ export function monthLabel(ym, lang = 'en') {
   return `${MONTHS_LONG[lang][m - 1]} ${y}`;
 }
 
+/**
+ * When Pro access ends, from the billing status: `{ end, trial, daysLeft }`, the later of the trial
+ * and the paid period. Null when not on Pro, or on paid Pro with no end date.
+ */
+export function proPeriod(b) {
+  if (!b?.is_pro || (b.plan === 'pro' && !b.pro_until)) return null; // paid with no end outlasts any trial
+  const ends = [
+    b.on_trial && b.trial_ends_at ? { end: b.trial_ends_at, trial: true } : null,
+    b.plan === 'pro' ? { end: b.pro_until, trial: false } : null,
+  ].filter(Boolean);
+  if (!ends.length) return null;
+  const last = ends.reduce((a, x) => (Date.parse(x.end) > Date.parse(a.end) ? x : a));
+  return { ...last, daysLeft: Math.max(0, Math.ceil((Date.parse(last.end) - Date.now()) / 86400000)) };
+}
+
+/** "Pro until 14 Dec 2026 · 38 days left" (or the trial's end); "Pro is active" when it has no end. */
+export function proLine(b, t, lang = 'en') {
+  const p = proPeriod(b);
+  if (!p) return t('profiles.proActive');
+  const left = p.daysLeft === 0 ? t('profiles.endsToday')
+    : p.daysLeft === 1 ? t('profiles.oneDayLeft') : t('profiles.daysLeft', { n: p.daysLeft });
+  return `${t(p.trial ? 'profiles.trialEnds' : 'profiles.proUntil', { date: fullDate(p.end, lang) })} · ${left}`;
+}
+
 /** Whole days from one "YYYY-MM-DD" to another (negative if `b` is earlier). */
 export function daysBetween(a, b) {
   const utc = (iso) => { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d); };

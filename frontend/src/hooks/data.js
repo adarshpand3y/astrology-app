@@ -69,13 +69,17 @@ export function useRemedies() {
 
 /** Done vs due per day for the last year (heatmap). */
 export function useRemedyHistory() {
+  const { profileId } = useAccount();
   const today = todayISO();
-  return useApi(`remedy-history:${today}`, () => remediesApi.history(today));
+  return useApi(`remedy-history:${profileId}:${today}`, () => remediesApi.history(today));
 }
 
-export function useGoals() {
+/** Goals of a chart: `profile` id, else the active chart. */
+export function useGoals(profile) {
   const { lang } = useI18n();
-  return useApi(`goals:${lang}`, () => remediesApi.goals());
+  const { profileId } = useAccount();
+  const id = profile || profileId;
+  return useApi(id ? `goals:${id}:${lang}` : null, () => remediesApi.goals(profile));
 }
 
 export const useBilling = () => useApi('billing', () => billingApi.status());
@@ -93,9 +97,3 @@ export function useTrends(days = 30) {
 }
 
 export const useAlertPrefs = () => useApi('alert-prefs', () => alertsApi.prefs());
-
-export function useSchedule() {
-  const { lang } = useI18n();
-  const { profileId, placeId } = useAccount();
-  return useApi(`schedule:${profileId}:${placeId}:${lang}`, () => alertsApi.schedule(7));
-}

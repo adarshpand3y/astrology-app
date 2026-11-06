@@ -45,10 +45,10 @@ def practice_insight(history: list, done_due: dict, lang: str) -> dict | None:
 def trends(user, today: date, days: int, lang: str, natal_moon_sign: int | None, tz: ZoneInfo) -> dict:
     start = today - timedelta(days=days - 1)
     entries = {e.date: e for e in JournalEntry.objects.filter(user=user, date__gte=start, date__lte=today)}
-    # Remedies done vs due per day (archived remedies included), over the longer pattern window.
+    # The active chart's remedies done vs due per day (archived included), over the longer pattern window.
     window = max(days, 120)
     done_due = {date.fromisoformat(d["date"]): (d["done"], d["due"])
-                for d in remedies.history(user, today, window)["days"]}
+                for d in remedies.history(user.active_profile, today, window)["days"]}
     bars = []
     for i in range(days):
         d = start + timedelta(days=i)

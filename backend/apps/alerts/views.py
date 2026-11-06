@@ -18,11 +18,20 @@ class PrefsSerializer(serializers.ModelSerializer):
         fields = ["dasha", "transit", "rahu", "sade_sati", "daily", "periods", "periods_night", "remedies", "vrat", "daily_time", "remedy_time", "rahu_lead_minutes"]
 
 
+def prefs_payload(prefs: AlertPreference, user) -> dict:
+    """Preferences as they take effect: on the free plan the Pro-only alerts read as off (the stored
+    choice is kept, so they come back on with Pro)."""
+    pro = is_pro(user)
+    data = PrefsSerializer(prefs).data
+    if not pro:
+        data.update({f: False for f in AlertPreference.PRO_FIELDS})
+    return {**data, "pro_fields": list(AlertPreference.PRO_FIELDS), "is_pro": pro}
+
+
 class PrefsView(APIView):
     @extend_schema(responses={200: PrefsSerializer})
     def get(self, request):
-        data = PrefsSerializer(services.prefs_for(request.user)).data
-        return Response({**data, "pro_fields": list(AlertPreference.PRO_FIELDS), "is_pro": is_pro(request.user)})
+        return Response(prefs_payload(services.prefs_for(request.user), request.user))
 
     @extend_schema(request=PrefsSerializer, responses={200: PrefsSerializer},
                    summary="Update alert preferences (transit & Sade Sati need Pro)")
@@ -32,8 +41,7 @@ class PrefsView(APIView):
         ser.is_valid(raise_exception=True)
         if any(ser.validated_data.get(f) for f in AlertPreference.PRO_FIELDS):
             require_pro(request.user)
-        ser.save()
-        return Response({**ser.data, "pro_fields": list(AlertPreference.PRO_FIELDS), "is_pro": is_pro(request.user)})
+        return Response(prefs_payload(ser.save(), request.user))
 
 
 class ScheduleView(APIView):

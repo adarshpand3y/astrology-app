@@ -79,8 +79,8 @@ Errors always look like `{"error": {"code", "message", "details"}}`.
 | POST | `/daily/decision/` | `{activity, range}` → ranked windows with scores (Pro) |
 | GET | `/daily/transits/` | gochara vs natal chart + Sade Sati |
 | GET | `/daily/calendar/?month=YYYY-MM` | festival calendar: tithi at each sunrise, named Ekadashis and festivals with what to do (±24 months) |
-| GET/PUT | `/remedies/goals/` | goal catalogue · set goals (`{goals:[...]}`: 1 on the free plan, up to 3 with Pro), which seeds remedies for them |
-| GET/POST | `/remedies/` | list (seeded from goals, else the Daśā lord; chart remedies incl. the lagna element practice and Gandmool shanti puja) / add for a graha or a custom remedy (Pro) |
+| GET/PUT | `/remedies/goals/?profile=` | a chart's goal catalogue · set its goals (`{goals:[...]}`; `[]` skips them), which seeds remedies for them. Free: 1 goal on your own chart, none on others; Pro: up to 3 on any |
+| GET/POST | `/remedies/` | the active chart's list (`?profile=` overrides; seeded from its goals, else its Mahā and Antar daśā lords; chart remedies incl. the lagna element practice and Gandmool shanti puja) / add for a graha or a custom remedy (Pro) |
 | PATCH/DELETE | `/remedies/{id}/` | edit title/text/how/cadence/target/weekdays/reminder or `reset` (Pro) · remove (archived) |
 | POST | `/remedies/{id}/progress/` | count / mark complete |
 | GET | `/remedies/history/?days=365` | done vs due per day, for the heatmap |
@@ -95,9 +95,12 @@ email + password only; `user.needs_onboarding` stays true until the user has an 
 `current_place_id` and `profile`.
 
 **Pro gating:** decision assistant, divisional charts other than D1, Dasha drill-down below
-Antardaśā, more than one goal, adding and editing remedies (including reminders), and transit/Sade
+Antardaśā, more than one goal, goals on other people's charts, adding and editing remedies (including reminders), and transit/Sade
 Sati alerts (goal remedies, marking done, removing and the history heatmap are free). Grant Pro manually with
 `python manage.py grant_pro user@example.com [--days N]` until store billing is integrated.
+
+**Goals and remedies are per chart:** each birth profile has its own goals, remedy list, streak and
+heatmap (the active chart's are shown); the daily remedy reminder covers every chart.
 
 **Demo data:** `python manage.py seed_demo` creates `demo@example.com` / `Demo-pass-123` (verified,
 onboarded, with chart, goal and remedies) plus 45 days of remedy completions and journal check-ins,

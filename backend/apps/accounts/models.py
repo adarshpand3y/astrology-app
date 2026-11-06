@@ -41,8 +41,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Whose chart the app reads (one of the user's birth profiles).
     active_profile = models.ForeignKey("profiles.BirthProfile", null=True, blank=True,
                                        on_delete=models.SET_NULL, related_name="+")
-    # Life goals picked at onboarding (keys of apps.vedic.content.goals) — drive remedy suggestions.
-    goals = models.JSONField(default=list, blank=True)
 
     objects = UserManager()
 
@@ -58,7 +56,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def needs_onboarding(self) -> bool:
-        return self.active_profile_id is None or not self.goals
+        """Until there is an active chart and goals were chosen for one of the user's charts."""
+        return self.active_profile_id is None or not self.birth_profiles.filter(goals_chosen_at__isnull=False).exists()
 
 
 class EmailOTP(models.Model):

@@ -17,6 +17,9 @@ class UserRemedy(models.Model):
         CUSTOM = "custom", "Custom"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="remedies")
+    # The chart this remedy belongs to: each chart has its own list, streak and history.
+    profile = models.ForeignKey("profiles.BirthProfile", on_delete=models.CASCADE, related_name="remedies",
+                                null=True)
     planet = models.CharField(max_length=2, blank=True)
     kind = models.CharField(max_length=10, choices=Kind.choices)
     reminder = models.BooleanField(default=True)
@@ -45,7 +48,7 @@ class UserRemedy(models.Model):
     class Meta:
         ordering = ["created_at", "id"]
         constraints = [models.UniqueConstraint(
-            fields=["user", "planet", "kind"], name="uniq_user_remedy",
+            fields=["profile", "planet", "kind"], name="uniq_profile_remedy",
             condition=models.Q(archived_at__isnull=True) & ~models.Q(kind="custom"))]
 
     def __str__(self):

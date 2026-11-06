@@ -9,7 +9,7 @@ import { invalidate, setCached } from '../hooks/useApi';
 import { useBilling } from '../hooks/data';
 import { useI18n } from '../i18n';
 import { useTheme } from '../theme';
-import { fullDate } from '../utils/format';
+import { proLine, proPeriod } from '../utils/format';
 
 const SYMBOL = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
 
@@ -73,7 +73,7 @@ export default function Paywall() {
       {data.is_pro ? (
         <Card radius={20} pad={20} border={th.c.accent} style={{ alignItems: 'center', marginBottom: 16 }}>
           <Text style={[th.font.display(500), { fontSize: 22, color: th.c.ink }]}>{t('paywall.active')}</Text>
-          {data.on_trial ? <T v="small" style={{ marginTop: 4 }}>{t('paywall.activeUntil', { date: fullDate(data.trial_ends_at, lang) })}</T> : null}
+          {proPeriod(data) ? <T v="small" style={{ marginTop: 4, textAlign: 'center' }}>{proLine(data, t, lang)}</T> : null}
         </Card>
       ) : (
         <>

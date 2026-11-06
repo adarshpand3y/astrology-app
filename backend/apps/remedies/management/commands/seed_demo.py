@@ -116,8 +116,8 @@ class Command(BaseCommand):
                 existing.delete()
             user, profile, today = self.create_account(email, password, name, pro)
             start = today - timedelta(days=days - 1)
-            services.set_goals(user, profile, goals)
-            remedies = list(services.active(user))
+            services.set_goals(profile, goals)
+            remedies = list(services.active(profile))
             # Backdate the remedies so the heatmap counts them as due from the first day.
             UserRemedy.objects.filter(user=user).update(
                 created_at=timezone.now() - timedelta(days=days))
@@ -125,7 +125,7 @@ class Command(BaseCommand):
             logs = self.remedy_activity(remedies, start, today, rng)
             entries = self.journal_activity(user, start, today, rng)
 
-        streak = services.streak(user, today)
+        streak = services.streak(profile, today)
         self.stdout.write(self.style.SUCCESS(
             f"Seeded {email} / {password} ({'Pro' if pro else 'free'})\n"
             f"  goals: {', '.join(goals)}, {len(remedies)} remedies\n"

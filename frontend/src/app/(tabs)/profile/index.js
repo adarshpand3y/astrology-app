@@ -11,7 +11,7 @@ import { useAccount, useBilling, useGoals, useProfiles } from '../../../hooks/da
 import { useI18n } from '../../../i18n';
 import { useAuth } from '../../../state/AuthContext';
 import { ERROR, useTheme } from '../../../theme';
-import { clock, errorMessage, fullDate, initials } from '../../../utils/format';
+import { clock, errorMessage, fullDate, initials, proLine } from '../../../utils/format';
 
 const AVATAR_COLORS = ['#5E8A6B', '#7C6B9E', '#B05A44', '#566579', '#B08A3A'];
 
@@ -167,6 +167,7 @@ export default function Profiles() {
   };
 
   const profiles = data?.results || [];
+  const activeChart = profiles.find((p) => p.id === profileId);
   const b = billing.data;
 
   return (
@@ -214,15 +215,19 @@ export default function Profiles() {
       <T v="eyebrow" style={{ marginTop: 26, marginBottom: 10, marginHorizontal: 2 }}>{t('profiles.yourSpace')}</T>
       <View style={{ backgroundColor: th.c.surface, borderRadius: 18, borderWidth: 1, borderColor: th.c.hair, overflow: 'hidden' }}>
         {brand.features.remedies ? (
-          <MenuRow glyph="✦" title={t('goals.title')} sub={goals.data?.catalogue
-            .filter((g) => goals.data.goals.includes(g.key)).map((g) => g.label).join(' · ')}
+          <MenuRow glyph="✦"
+            title={activeChart && activeChart.relation !== 'self'
+              ? t('goals.menuFor', { name: activeChart.name.split(' ')[0] }) : t('goals.title')}
+            sub={goals.data ? (goals.data.goals.length ? goals.data.catalogue
+              .filter((g) => goals.data.goals.includes(g.key)).map((g) => g.label).join(' · ') : t('goals.notSet'))
+              : undefined}
             onPress={() => router.push('/goals')} />
         ) : null}
         {brand.features.alerts ? <MenuRow glyph="◈" title={t('profiles.alerts')} onPress={() => router.push('/profile/alerts')} /> : null}
         <MenuRow glyph="⚙" title={t('profiles.settings')} onPress={() => router.push('/profile/settings')} last={!brand.features.paywall} />
         {brand.features.paywall ? (
           <MenuRow glyph={<ProIcon size={16} />} title={t('profiles.pro')} last
-            sub={b?.is_pro ? (b.on_trial ? t('profiles.trialEnds', { date: fullDate(b.trial_ends_at, lang) }) : t('profiles.proActive')) : undefined}
+            sub={b?.is_pro ? proLine(b, t, lang) : undefined}
             onPress={() => router.push('/paywall')} />
         ) : null}
       </View>

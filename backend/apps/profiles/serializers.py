@@ -29,10 +29,12 @@ class BirthProfileSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "gender", "relation", "birth_date", "birth_time", "time_known",
             "place_id", "place_label", "latitude", "longitude", "tz_name",
-            "utc_offset_minutes", "birth_utc", "ayanamsa", "node_mode", "notes",
+            "utc_offset_minutes", "birth_utc", "ayanamsa", "node_mode", "notes", "goals", "goals_chosen_at",
             "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "utc_offset_minutes", "birth_utc", "created_at", "updated_at"]
+        # Goals are set through PUT /remedies/goals/?profile=<id>, which also suggests their remedies.
+        read_only_fields = ["id", "utc_offset_minutes", "birth_utc", "goals", "goals_chosen_at",
+                            "created_at", "updated_at"]
 
     def validate_birth_date(self, value):
         if not (MIN_DATE <= value <= MAX_DATE):
