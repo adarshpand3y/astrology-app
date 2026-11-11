@@ -128,7 +128,6 @@ class Snapshot:
     ascendant: float = 0.0     # sidereal
     mc: float = 0.0            # sidereal
     helio: dict[str, float] = field(default_factory=dict)  # tropical heliocentric lon
-    node_mode: str = "mean"
 
 
 def _mean_node_tropical(jd_tt: float) -> float:
@@ -137,16 +136,8 @@ def _mean_node_tropical(jd_tt: float) -> float:
                 + t**3 / 467441.0 - t**4 / 60616000.0)
 
 
-def _true_node_tropical(earth, moon, t) -> np.ndarray:
-    pos, vel = (moon - earth).at(t).frame_xyz_and_velocity(ecliptic_frame)
-    r, v = pos.au, vel.au_per_d
-    h = np.cross(r.T, v.T).T
-    return np.degrees(np.arctan2(h[0], -h[1])) % 360.0
-
-
 def compute_snapshot(dt: datetime, lat: float, lon: float,
-                     ayanamsa_name: str = ayan.DEFAULT_AYANAMSA,
-                     node_mode: str = "mean") -> Snapshot:
+                     ayanamsa_name: str = ayan.DEFAULT_AYANAMSA) -> Snapshot:
     eph, ts = _load()
     t = to_time(dt)
     step = 1.0 / 24.0  # finite-difference step for speeds (days)
@@ -157,8 +148,7 @@ def compute_snapshot(dt: datetime, lat: float, lon: float,
     true_ay = mean_ay + dpsi
 
     snap = Snapshot(dt=dt, jd_ut=t.ut1, jd_tt=t.tt, lat=lat, lon=lon,
-                    ayanamsa_name=ayanamsa_name, ayanamsa=true_ay, obliquity=eps,
-                    node_mode=node_mode)
+                    ayanamsa_name=ayanamsa_name, ayanamsa=true_ay, obliquity=eps)
 
     earth = eph["earth"]
     sun = eph["sun"]
@@ -179,17 +169,11 @@ def compute_snapshot(dt: datetime, lat: float, lon: float,
             _, hlon, _ = ICRF(vec, t=t, center=10).frame_latlon(ecliptic_frame)
             snap.helio[code] = float(hlon.degrees)
 
-    # Lunar nodes
-    if node_mode == "true":
-        nodes = _true_node_tropical(earth, eph["moon"], tt3)
-        rahu_trop = float(nodes[1])
-        rahu_speed = (((nodes[2] - nodes[0] + 180.0) % 360.0) - 180.0) / (2 * step)
-        rahu_sid = norm(rahu_trop - true_ay)
-    else:
-        rahu_mean_trop = _mean_node_tropical(t.tt)
-        rahu_trop = norm(rahu_mean_trop + dpsi)
-        rahu_speed = -0.0529539
-        rahu_sid = norm(rahu_mean_trop - mean_ay)
+    # Lunar nodes (mean node)
+    rahu_mean_trop = _mean_node_tropical(t.tt)
+    rahu_trop = norm(rahu_mean_trop + dpsi)
+    rahu_speed = -0.0529539
+    rahu_sid = norm(rahu_mean_trop - mean_ay)
     for code, sid, trop in ((RA, rahu_sid, rahu_trop), (KE, norm(rahu_sid + 180), norm(rahu_trop + 180))):
         snap.bodies[code] = BodyState(
             lon=sid, lat=0.0, speed=float(rahu_speed), tropical_lon=trop,

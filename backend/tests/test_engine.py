@@ -209,13 +209,6 @@ def test_bhavabala(strengths):
         assert sum(b["components"].values()) == pytest.approx(b["total_virupas"], abs=1e-3)
 
 
-def test_true_node_option():
-    ctx = ChartContext(BirthInput(**{**INDIA.__dict__, "node_mode": "true"}))
-    mean = ChartContext(INDIA)
-    diff = abs(ctx.snap.bodies["Ra"].lon - mean.snap.bodies["Ra"].lon)
-    assert 0 < diff < 2.0
-
-
 def test_sky_now_retrograde_and_combust():
     from apps.vedic.engine.transits import sky_now
 

@@ -79,7 +79,7 @@
       chart = c;
       $("#pname").textContent = p.name;
       $("#pmeta").innerHTML = `${esc(p.birth_date)} ${esc(p.birth_time)} (${esc(p.tz_name)}) · ${esc(p.place_label || "")} ` +
-        `${num(p.latitude, 4)}, ${num(p.longitude, 4)} · Ayanamsa ${esc(c.meta.ayanamsa.name)} ${esc(c.meta.ayanamsa.dms)} · ${esc(c.meta.node_mode)} node · engine ${esc(c.meta.engine_version)}`;
+        `${num(p.latitude, 4)}, ${num(p.longitude, 4)} · Ayanamsa ${esc(c.meta.ayanamsa.name)} ${esc(c.meta.ayanamsa.dms)} · engine ${esc(c.meta.engine_version)}`;
       renderChart(); renderPlanets(); renderPanchang();
     } catch (err) { showError($("#msg"), err); }
   }

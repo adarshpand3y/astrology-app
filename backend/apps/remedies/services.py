@@ -102,8 +102,8 @@ def gandmool_birth_planets(profile) -> list[str]:
 
 
 def lagna_element(profile) -> str | None:
-    """The lagna's tattva ("Fire", "Earth", "Air", "Water"), only when the birth time is known."""
-    if profile is None or not profile.time_known:
+    """The lagna's tattva ("Fire", "Earth", "Air", "Water")."""
+    if profile is None:
         return None
     return SIGN_TATVA[vedic.get_chart(profile)["lagna"]["sign_index"] - 1]
 
@@ -111,7 +111,7 @@ def lagna_element(profile) -> str | None:
 def chart_wants(profile, at=None, dasha: tuple[str, str] | None = None) -> dict[tuple[str, str], list[str]]:
     """(graha, kind) -> chart reasons: each `chart_reasons` graha's mantra; for no graha, gau seva when
     any graha was born in a Gandmool nakshatra, the one-time shanti puja when Chandra was, and the
-    lagna element's practice when the birth time is known."""
+    lagna element's practice."""
     reasons = chart_reasons(profile, at, dasha)
     want = {(planet, CHART_KIND): r for planet, r in reasons.items()}
     if gandmool_birth_planets(profile):
@@ -188,8 +188,8 @@ def sync_chart(profile, at=None, dasha: tuple[str, str] | None = None) -> None:
 
 
 def house_lords(profile) -> dict[int, str] | None:
-    """Bhava -> lord, only when the birth time (and so the lagna) is known."""
-    if profile is None or not profile.time_known:
+    """Bhava -> lord."""
+    if profile is None:
         return None
     return {b["bhava"]: b["lord"] for b in vedic.get_strengths(profile)["bhavabala"]}
 
@@ -391,7 +391,8 @@ def serialize(remedy: UserRemedy, today: date, lang: str) -> dict:
         "basis": remedy.basis, "basis_label": rc.basis_label(remedy.basis, lang, gandmool, element),
         "element": element.lower() if element else None,
         "done_on": d.isoformat() if info["once"] and (d := done_on(remedy)) else None,
-        "reminder": remedy.reminder, "due_today": is_due(remedy, today, info),
+        "reminder": remedy.reminder, "reminder_time": remedy.reminder_time.strftime("%H:%M"),
+        "due_today": is_due(remedy, today, info),
         "edited": remedy.edited,
         "overrides": {f: getattr(remedy, f) for f in UserRemedy.OVERRIDES},
         **info,

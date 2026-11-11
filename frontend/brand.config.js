@@ -83,7 +83,6 @@ module.exports = {
     language: 'system', // 'system' | 'en' | 'hi'
     themeMode: 'system', // 'system' | 'light' | 'dark'
     chartStyle: 'north', // 'north' | 'south'
-    nodeMode: 'mean', // 'mean' | 'true'
     ayanamsa: 'lahiri',
   },
 

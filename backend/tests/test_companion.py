@@ -407,12 +407,6 @@ def test_lagna_element_practice_on_the_free_plan(client, monkeypatch):
     hi = client.get("/api/v1/remedies/", HTTP_ACCEPT_LANGUAGE="hi").data["remedies"]
     assert next(x for x in hi if x["kind"] == "element")["title"].startswith("जल तत्व")
 
-    # No birth time, no lagna: the practice is retired (its history stays).
-    profile.time_known = False
-    profile.save()
-    rs.sync_chart(profile)
-    assert not element_rows()
-
 
 def test_fallback_seed_has_no_gemstone(places):
     """No goals yet: the Mahadasha lord's mantra, fast and charity, but no gemstone."""
@@ -444,7 +438,7 @@ def test_remedy_list_skips_an_unchanged_chart_sync(client, monkeypatch):
     assert len(calls) == 1
 
     profile = BirthProfile.objects.get(owner__email="ananya@example.com")
-    profile.node_mode = "true" if profile.node_mode == "mean" else "mean"  # new birth data hash
+    profile.longitude += 0.01  # new birth data hash
     profile.save()
     client.get("/api/v1/remedies/")
     assert len(calls) == 2
@@ -496,7 +490,7 @@ def test_alert_feed_updates_chart_remedies(client):
     items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
     reasons = {b for r in UserRemedy.objects.filter(user=user, archived_at__isnull=True) for b in r.basis}
     assert reasons == {"lagna", "moon", "mahadasha", "antardasha", "gandmool_birth", "lagna_element"}
-    assert any("Chandra beej mantra" in i["body"] for i in items if i["category"] == "remedy")
+    assert any("Chandra beej mantra" in i["title"] for i in items if i["category"] == "remedy")
 
 
 def test_free_plan_has_one_goal(client):
@@ -574,14 +568,15 @@ def test_goals_and_remedies_are_per_chart(client, places):
 
 
 def test_reminder_names_each_chart(client, places):
-    """The daily remedy reminder covers every chart, naming them when more than one has remedies due."""
+    """Remedy reminders cover every chart, naming the chart when more than one has remedies."""
     blr, _ = places
     r = client.post("/api/v1/profiles/", {"name": "Ravi Rao", "relation": "family", "birth_date": "1962-03-02",
                                           "birth_time": "18:20", "place_id": blr.id}, format="json")
     client.put(f"/api/v1/remedies/goals/?profile={r.data['id']}", {"goals": []}, format="json")
     items = client.get("/api/v1/alerts/schedule/", {"days": 2}).data["items"]
-    bodies = [i["body"] for i in items if i["category"] == "remedy"]
-    assert bodies and all("Ananya: " in b and "Ravi: " in b for b in bodies)
+    titles = [i["title"] for i in items if i["category"] == "remedy"]
+    assert any("Ananya: " in t for t in titles) and any("Ravi: " in t for t in titles)
+    assert all("Ananya: " in t or "Ravi: " in t for t in titles)
 
 
 def test_changing_goals_keeps_edited_and_logged(client):
@@ -765,10 +760,19 @@ def test_alerts(client):
     assert {i["category"] for i in items} <= {"daily", "dasha", "period", "period_night", "remedy", "vrat"}
 
     reminders = [i for i in items if i["category"] == "remedy"]
-    assert reminders and reminders[0]["title"].startswith("🪔 Today's remedies · ")
-    assert "mantra" in reminders[0]["body"].lower()
+    assert reminders and all(i["title"].startswith("🪔 ") and i["remedy_id"] for i in reminders)
+    assert any("mantra" in i["title"].lower() for i in reminders)
     assert all(i["at"][11:16] == "07:00" for i in reminders)  # default time, no lead
-    assert len({i["at"][:10] for i in reminders}) == len(reminders)  # at most one a day
+    # One reminder per remedy per day, each at the remedy's own time.
+    assert len({(i["remedy_id"], i["at"][:10]) for i in reminders}) == len(reminders)
+    rid = reminders[0]["remedy_id"]
+    make_pro(client)  # editing is Pro
+    r = client.patch(f"/api/v1/remedies/{rid}/", {"reminder_time": "18:30"}, format="json")
+    assert r.status_code == 200 and r.data["reminder_time"] == "18:30"
+    items = client.get("/api/v1/alerts/schedule/", {"days": 3}).data["items"]
+    mine = [i for i in items if i["category"] == "remedy" and i["remedy_id"] == rid]
+    assert mine and all(i["at"][11:16] == "18:30" for i in mine)
+    assert any(i["at"][11:16] == "07:00" for i in items if i["category"] == "remedy" and i["remedy_id"] != rid)
 
     periods = [i for i in items if i["category"] == "period"]
     first = periods[0]

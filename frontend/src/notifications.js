@@ -145,7 +145,7 @@ async function doSync() {
       await N.scheduleNotificationAsync({
         content: {
           title: fillTimes(item.title, item.times), body: fillTimes(item.body, item.times),
-          data: { category: item.category },
+          data: { category: item.category, ...(item.remedy_id ? { remedyId: item.remedy_id } : {}) },
         },
         trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: new Date(item.at), channelId: channelFor(item.category) },
       });
@@ -190,6 +190,7 @@ async function promptExactAlarmsOnce({ title, message, later, allow }) {
 const ROUTES = { period: '/timeline', period_night: '/timeline', rahu: '/timeline', remedy: '/remedies', vrat: '/timeline/calendar' };
 
 export function routeForNotification(data) {
+  if (data?.category === 'remedy' && data.remedyId) return `/remedies/${data.remedyId}`;
   return ROUTES[data?.category] || null;
 }
 

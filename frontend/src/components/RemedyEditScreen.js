@@ -48,7 +48,7 @@ export function RemedyEditScreen({ id, home = '/remedies' }) {
   const submit = (body) => proGate(async () => {
     const remedy = id ? await remediesApi.update(id, body, todayISO())
       : (await remediesApi.create(body, todayISO())).remedies[0];
-    if ('reminder' in body) syncSchedule();
+    if (!id || 'reminder' in body || 'reminder_time' in body) syncSchedule();
     done(remedy);
   });
 

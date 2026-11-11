@@ -1,3 +1,5 @@
+from datetime import time
+
 from django.conf import settings
 from django.db import models
 
@@ -23,6 +25,8 @@ class UserRemedy(models.Model):
     planet = models.CharField(max_length=2, blank=True)
     kind = models.CharField(max_length=10, choices=Kind.choices)
     reminder = models.BooleanField(default=True)
+    # When this remedy's own reminder goes out on the days it is due (the phone's local time).
+    reminder_time = models.TimeField(default=time(7, 0))
     # The goal that suggested this remedy ("" = dasha fallback or added by the user).
     goal = models.CharField(max_length=20, blank=True)
     # Chart reasons this remedy is suggested for, whatever the goals: "lagna" (lagna lord), "moon",

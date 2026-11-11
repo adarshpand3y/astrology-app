@@ -153,6 +153,7 @@ export default function Remedies() {
     }
   };
 
+  const addRemedy = () => router.push(data.locked ? '/paywall' : '/remedies/new');
   const refresh = () => { refetch(); history.refetch(); invalidate('journal:'); invalidate('trends:'); };
   const dueToday = data.remedies.filter((r) => r.due_today);
   const doneToday = dueToday.filter((r) => r.today.completed).length;
@@ -177,9 +178,21 @@ export default function Remedies() {
         {/* The daily log lives here, next to the practice it reflects on. */}
         {brand.features.journal ? <MoodCheckIn /> : null}
 
+        {/* Add sits in the list header, so it stays in view however many remedies there are. */}
         <Row style={{ justifyContent: 'space-between', marginTop: 18, marginBottom: 9, paddingHorizontal: 2 }}>
-          <T v="eyebrow">{t('remedies.todayList')}</T>
-          {dueToday.length ? <T v="mono" style={{ fontSize: 10.5 }}>{t('remedies.doneCount', { done: doneToday, due: dueToday.length })}</T> : null}
+          <View style={{ flex: 1 }}>
+            <T v="eyebrow">{t('remedies.todayList')}</T>
+            {dueToday.length ? <T v="mono" style={{ fontSize: 10.5, marginTop: 3 }}>{t('remedies.doneCount', { done: doneToday, due: dueToday.length })}</T> : null}
+          </View>
+          <Pressable onPress={addRemedy} accessibilityRole="button" accessibilityLabel={t('remedies.add')} hitSlop={6}
+            style={({ pressed }) => ({
+              flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 7, paddingHorizontal: 13, borderRadius: 20,
+              backgroundColor: th.c.accent, opacity: pressed ? 0.8 : 1,
+            })}>
+            <Text style={[th.font.ui(700), { fontSize: 15, lineHeight: 17, color: th.c.onAccent }]}>+</Text>
+            <Text style={[th.font.ui(600), { fontSize: 13, color: th.c.onAccent }]}>{t('remedies.addShort')}</Text>
+            {data.locked ? <ProIcon size={11} color={th.c.onAccent} /> : null}
+          </Pressable>
         </Row>
         {!data.remedies.length ? <Empty title={t('remedies.title')} /> : null}
         <View style={{ gap: 8 }}>
@@ -195,14 +208,6 @@ export default function Remedies() {
           ))}
         </View>
 
-        <Pressable onPress={() => router.push(data.locked ? '/paywall' : '/remedies/new')} style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, padding: 13, borderRadius: 16,
-          borderWidth: 1.5, borderStyle: 'dashed', borderColor: th.c.hair2, marginTop: 12,
-        }}>
-          <Text style={{ fontSize: 18, color: th.c.ink2 }}>+</Text>
-          <T weight={600} style={{ fontSize: 14, color: th.c.ink2 }}>{t('remedies.add')}</T>
-          {data.locked ? <T v="tiny" style={{ color: th.c.accent }}><ProIcon size={11} /> {t('common.pro')}</T> : null}
-        </Pressable>
         {data.locked ? <T v="tiny" style={{ textAlign: 'center', marginTop: 10 }}>{t('remedies.lockedSub')}</T> : null}
       </View>
       {progressReady ? (

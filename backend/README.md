@@ -116,7 +116,7 @@ Timestamps are ISO-8601 with the profile's local UTC offset (e.g. `+05:30`).
 - **Positions**: Skyfield + JPL DE440s; geocentric, apparent, true ecliptic of date.
 - **Ayanamsa**: Lahiri (Chitrapaksha), with IAU 2006 precession from the 1956 reference
   value and nutation applied (true ayanamsa). Registry in `engine/ayanamsa.py` for adding Raman/KP.
-- **Nodes**: mean by default, true node per profile (`node_mode`).
+- **Nodes**: mean node.
 - **Houses**: whole-sign for the rasi chart; Sripati bhavas for chalit and the strengths.
 - **Panchang**: the Vedic day starts at sunrise (upper limb + refraction), so a birth before
   sunrise takes the previous weekday. Months are amanta, with adhika detection.

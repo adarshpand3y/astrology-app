@@ -74,8 +74,7 @@ def planetary_wars(lons: dict[str, float]) -> list[tuple[str, str]]:
 
 def planet_attributes(code: str, lon: float, speed: float, sun_lon: float,
                       signs: dict[str, int]) -> dict:
-    # Nodes included: the mean node always moves backwards; the true node does too except
-    # for brief stationary/direct spells, which its speed shows.
+    # Nodes included: the mean node always moves backwards.
     retro = speed < 0
     dig = dignity(code, lon, signs)
     return {

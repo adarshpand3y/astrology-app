@@ -71,11 +71,11 @@ def _period_items(mu: dict, now: datetime, lang: str, parts: set[str]) -> list[d
     return items
 
 
-def _remedy_item(remedies: list, d, prefs, lang: str, tz) -> dict | None:
-    """One reminder listing the remedies due on `d` (reminder on, not already done that day), across
-    the user's charts; with more than one chart due, each is named ("Ravi: Shani beej mantra")."""
-    due = []
-    charts = {r.profile_id for r in remedies if rs.is_due(r, d)}
+def _remedy_items(remedies: list, d, lang: str, tz) -> list[dict]:
+    """One reminder per remedy due on `d` (reminder on, not already done that day), at that remedy's
+    own time, across the user's charts; with more than one chart, each is named ("Ravi: ...")."""
+    items = []
+    charts = {r.profile_id for r in remedies}
     for r in remedies:
         info = rs.effective(r, lang)
         if not rs.is_due(r, d, info) or any(l.date == d and l.completed for l in r.logs.all()):
@@ -87,12 +87,13 @@ def _remedy_item(remedies: list, d, prefs, lang: str, tz) -> dict | None:
             title = f"{title} ({info['target']}×)"
         if len(charts) > 1 and r.profile:
             title = f"{r.profile.name.split(' ')[0]}: {title}"
-        due.append(title)
-    if not due:
-        return None
-    at = datetime.combine(d, prefs.remedy_time, tzinfo=tz)
-    title = pick(lang, f"Today's remedies · {len(due)}", f"आज के उपाय · {len(due)}")
-    return _item("remedy", at, title, ", ".join(due), "good", lead=timedelta(0))
+        body = info.get("text") or info.get("cadence") or pick(lang, "Time for your remedy.", "उपाय का समय हो गया।")
+        item = _item("remedy", datetime.combine(d, r.reminder_time, tzinfo=tz), title, body, "good",
+                     lead=timedelta(0))
+        item["id"] = hashlib.sha1(f"remedy:{r.pk}:{d.isoformat()}".encode()).hexdigest()[:16]
+        item["remedy_id"] = r.pk  # tapping it opens this remedy
+        items.append(item)
+    return items
 
 
 def _vrat_items(ctx: DayContext, days: int) -> list[dict]:
@@ -146,9 +147,7 @@ def schedule(ctx: DayContext, days: int) -> list[dict]:
                 items.append(_item("daily", at, pick(lang, "Today, in one line", "आज, एक पंक्ति में"),
                                    text.split(". ")[0].rstrip(".") + ".", "good", lead=timedelta(0)))
         if remedies:
-            item = _remedy_item(remedies, d, prefs, lang, tz)
-            if item:
-                items.append(item)
+            items.extend(_remedy_items(remedies, d, lang, tz))
 
     if prefs.vrat:
         items.extend(_vrat_items(ctx, days))

@@ -23,14 +23,14 @@ logger = logging.getLogger(__name__)
 def birth_input(profile: BirthProfile) -> BirthInput:
     return BirthInput(
         dt=profile.birth_utc, lat=profile.latitude, lon=profile.longitude,
-        tz_name=profile.tz_name, ayanamsa=profile.ayanamsa, node_mode=profile.node_mode,
+        tz_name=profile.tz_name, ayanamsa=profile.ayanamsa,
     )
 
 
 def input_hash(profile: BirthProfile) -> str:
     raw = json.dumps([
         profile.birth_utc.isoformat(), round(profile.latitude, 6), round(profile.longitude, 6),
-        profile.tz_name, profile.ayanamsa, profile.node_mode, ENGINE_VERSION,
+        profile.tz_name, profile.ayanamsa, ENGINE_VERSION,
     ])
     return hashlib.sha256(raw.encode()).hexdigest()
 

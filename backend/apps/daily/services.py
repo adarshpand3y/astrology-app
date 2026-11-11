@@ -43,8 +43,7 @@ def natal(profile) -> dict:
         "lagna_sign": lagna_sign,
         "moon_sign": moon_sign,
         "moon_nakshatra": moon["nakshatra"]["index"],
-        # Without a birth time the Lagna is unreliable: read houses from the Moon (Chandra lagna).
-        "ref_sign": lagna_sign if profile.time_known else moon_sign,
+        "ref_sign": lagna_sign,
     }
 
 
@@ -235,14 +234,14 @@ def sky(ctx: DayContext, n: dict, positions: dict) -> dict:
         })
     return {
         "planets": planets,
-        # What the houses are counted from: the lagna, or the Moon sign when the birth time is unknown.
-        "reference": {"basis": "lagna" if ctx.profile.time_known else "moon", "sign": SIGNS[n["ref_sign"]],
+        # What the houses are counted from: always the lagna (the birth time is required).
+        "reference": {"basis": "lagna", "sign": SIGNS[n["ref_sign"]],
                       "ayanamsa": ayanamsa},
         # For the transit chart: drawn from the chart's own lagna (the reference above), or from the
         # lagna rising now where the user is.
         "lagna": {
             "natal": {"sign_index": n["ref_sign"] + 1,
-                      "degree": n["chart"]["lagna"]["degree"] if ctx.profile.time_known else None},
+                      "degree": n["chart"]["lagna"]["degree"]},
             "now": rising_lagna(ctx, ayanamsa),
         },
     }

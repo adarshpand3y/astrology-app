@@ -17,9 +17,9 @@ const AVATAR_COLORS = ['#5E8A6B', '#7C6B9E', '#B05A44', '#566579', '#B08A3A'];
 
 const avatarColor = (p, i, th) => (p.relation === 'self' ? th.c.accent : AVATAR_COLORS[i % AVATAR_COLORS.length]);
 
-/** "3:42 AM", or "time unknown" when the chart was cast without a birth time. */
+/** "3:42 AM". */
 function birthTime(p, t, lang) {
-  if (!p.time_known || !p.birth_time) return t('profiles.noTime');
+  if (!p.birth_time) return '';
   const [h, m] = p.birth_time.split(':');
   return clock(`2000-01-01T${h}:${m}`, lang, true);
 }

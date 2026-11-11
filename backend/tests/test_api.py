@@ -165,10 +165,7 @@ def test_profile_coordinates_only_and_historical_dst(authed):
     assert r.data["tz_name"] == "America/New_York" and r.data["utc_offset_minutes"] == -240
 
 
-def test_profile_unknown_time_and_validation(authed):
-    r = authed.post("/api/v1/profiles/", {"name": "U", "birth_date": "1990-01-01", "time_known": False,
-                                          "latitude": 10, "longitude": 76}, format="json")
-    assert r.status_code == 201 and r.data["birth_time"] == "12:00:00"
+def test_profile_birth_time_required_and_validation(authed):
     r = authed.post("/api/v1/profiles/", {"name": "U", "birth_date": "1990-01-01", "latitude": 10,
                                           "longitude": 76}, format="json")
     assert r.status_code == 400

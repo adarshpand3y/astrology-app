@@ -17,8 +17,7 @@
       </div>
       <div class="row">
         <div><label>Birth date</label><input name="birth_date" type="date" required></div>
-        <div><label>Birth time (local)</label><input name="birth_time" type="time" step="1"></div>
-        <div><label>Time known?</label><select name="time_known"><option value="true">Yes</option><option value="false">No (use noon)</option></select></div>
+        <div><label>Birth time (local)</label><input name="birth_time" type="time" step="1" required></div>
       </div>
       <label>Birth place (search)</label>
       <div class="suggest">
@@ -33,7 +32,6 @@
       </div>
       <label>Place label</label><input name="place_label">
       <div class="row">
-        <div><label>Lunar node</label><select name="node_mode"><option value="mean">Mean</option><option value="true">True</option></select></div>
         <div><label>Ayanamsa</label><select name="ayanamsa"><option value="lahiri">Lahiri</option></select></div>
       </div>
       <label>Notes</label><textarea name="notes" rows="2"></textarea>
@@ -57,7 +55,7 @@
       $("#list").innerHTML = `<table><tr><th>Name</th><th>Born (local)</th><th>Place</th><th></th></tr>` +
         profiles.map(p => `<tr>
           <td><a href="/ui/profiles/${p.id}/">${esc(p.name)}</a></td>
-          <td>${esc(p.birth_date)} ${esc(p.birth_time)}${p.time_known ? "" : " <span class='pill'>approx</span>"}</td>
+          <td>${esc(p.birth_date)} ${esc(p.birth_time)}</td>
           <td>${esc(p.place_label || `${num(p.latitude)}, ${num(p.longitude)}`)}<br><span class="muted">${esc(p.tz_name)} (UTC${p.utc_offset_minutes >= 0 ? "+" : ""}${(p.utc_offset_minutes / 60).toFixed(2)})</span></td>
           <td><button class="secondary" onclick="edit('${p.id}')">Edit</button>
               <button class="secondary" onclick="del('${p.id}')">Delete</button></td></tr>`).join("") + `</table>`;
@@ -85,8 +83,8 @@
     const id = d.id; delete d.id;
     const body = {
       name: d.name, gender: d.gender, relation: d.relation, birth_date: d.birth_date,
-      birth_time: d.birth_time || null, time_known: d.time_known === "true",
-      place_label: d.place_label, node_mode: d.node_mode, ayanamsa: d.ayanamsa, notes: d.notes,
+      birth_time: d.birth_time,
+      place_label: d.place_label, ayanamsa: d.ayanamsa, notes: d.notes,
     };
     if (d.place_id) body.place_id = Number(d.place_id); else body.place_id = null;
     if (d.latitude !== "") body.latitude = Number(d.latitude);

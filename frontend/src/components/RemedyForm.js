@@ -4,10 +4,17 @@ import { View } from 'react-native';
 import { useI18n } from '../i18n';
 import { useTheme } from '../theme';
 import { fieldErrors } from '../utils/format';
+import { DateTimeField } from './DateTimeField';
 import { Button, Chip, ErrorView, Field, Row, Switch, T, TextLink } from './ui';
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]; // Sunday = 0, as the API expects
 const sameDays = (a, b) => (a || ALL_DAYS).join() === (b || ALL_DAYS).join();
+
+// Reminder time: "HH:MM" on the API, a Date for the picker.
+const DEFAULT_TIME = '07:00';
+const pad = (n) => String(n).padStart(2, '0');
+const toDate = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return new Date(2000, 0, 1, h, m); };
+const toHHMM = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
 /**
  * Edit a remedy (`initial` = serialized remedy) or write a custom one (`initial` undefined): text,
@@ -24,6 +31,7 @@ export function RemedyForm({ initial, onSubmit, onReset, onRemove }) {
   const [target, setTarget] = useState(String(initial?.target ?? 1));
   const [days, setDays] = useState(initial?.weekdays || null); // null = every day
   const [reminder, setReminder] = useState(initial?.reminder ?? true);
+  const [time, setTime] = useState(() => toDate(initial?.reminder_time || DEFAULT_TIME));
   const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -55,6 +63,7 @@ export function RemedyForm({ initial, onSubmit, onReset, onRemove }) {
     put('target', n, initial?.target);
     if (custom || !sameDays(days, initial?.weekdays)) body.weekdays = days || ALL_DAYS;
     put('reminder', reminder, initial?.reminder);
+    put('reminder_time', toHHMM(time), initial?.reminder_time);
     setBusy(true);
     setError(null);
     try {
@@ -108,6 +117,9 @@ export function RemedyForm({ initial, onSubmit, onReset, onRemove }) {
           </View>
           <Switch value={reminder} onChange={() => setReminder((v) => !v)} />
         </Row>
+        {reminder ? (
+          <DateTimeField label={t('remedies.reminderTime')} mode="time" value={time} onChange={setTime} />
+        ) : null}
       </View>
       <Button title={t('remedies.save')} onPress={submit} loading={busy} style={{ marginTop: 24 }} />
       {!custom && initial?.edited && onReset ? (

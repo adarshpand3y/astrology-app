@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useI18n } from '../i18n';
 import { useTheme } from '../theme';
-import { fullDate } from '../utils/format';
+import { clock, fullDate } from '../utils/format';
 import { ProIcon, RemedyIcon } from './Icons';
 import { T } from './ui';
 
@@ -15,7 +15,8 @@ export function RemedyCard({ remedy: r, onPress, right }) {
   const { t, lang } = useI18n();
   const details = [
     r.done_on ? t('remedies.doneOn', { date: fullDate(r.done_on, lang) }) : r.cadence,
-    r.planet_name, r.edited && t('remedies.edited'),
+    r.planet_name, r.reminder && r.reminder_time && `🔔 ${clock(`2000-01-01T${r.reminder_time}`, lang, true)}`,
+    r.edited && t('remedies.edited'),
   ].filter(Boolean).join(' · ');
   return (
     <View style={{

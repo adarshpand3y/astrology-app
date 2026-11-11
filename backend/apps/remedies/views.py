@@ -73,6 +73,7 @@ class FieldsSerializer(serializers.Serializer):
     weekdays = serializers.ListField(child=serializers.IntegerField(min_value=0, max_value=6), min_length=1,
                                      max_length=7, required=False, allow_null=True, help_text="Sunday = 0")
     reminder = serializers.BooleanField(required=False)
+    reminder_time = serializers.TimeField(required=False, help_text="HH:MM, the phone's local time")
 
 
 class RemedyListView(APIView):
@@ -103,7 +104,9 @@ class RemedyListView(APIView):
         else:
             fields = {f: d[f] for f in UserRemedy.OVERRIDES if d.get(f) not in (None, "")}
             added = [UserRemedy.objects.create(user=request.user, profile=profile, kind=UserRemedy.Kind.CUSTOM,
-                                               user_added=True, reminder=d.get("reminder", True), **fields)]
+                                               user_added=True, reminder=d.get("reminder", True),
+                                               **({"reminder_time": d["reminder_time"]} if "reminder_time" in d else {}),
+                                               **fields)]
         today = local_today(request)
         lang = request_lang(request)
         return Response({"remedies": [services.serialize(r, today, lang) for r in added]}, status=status.HTTP_201_CREATED)
@@ -131,6 +134,8 @@ class RemedyDetailView(APIView):
         d = ser.validated_data
         if "reminder" in d:
             remedy.reminder = d["reminder"]
+        if "reminder_time" in d:
+            remedy.reminder_time = d["reminder_time"].replace(second=0, microsecond=0)
         custom = remedy.kind == UserRemedy.Kind.CUSTOM
         if d.get("reset") and not custom:
             for f in UserRemedy.OVERRIDES:

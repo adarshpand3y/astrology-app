@@ -44,8 +44,8 @@ export function AlertToggles({ prefs: p, onToggle, fields = ALERT_FIELDS }) {
 
   const sub = (field) => {
     if (field === 'rahu') return t('alerts.rahuSub', { n: p.rahu_lead_minutes });
-    if (field === 'daily' || field === 'remedies') {
-      const [h, m] = (field === 'daily' ? p.daily_time : p.remedy_time).split(':');
+    if (field === 'daily') {
+      const [h, m] = p.daily_time.split(':');
       return t(`alerts.${field}Sub`, { t: clock(`2000-01-01T${h}:${m}`, lang, true) });
     }
     return t(`alerts.${field}Sub`);

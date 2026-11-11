@@ -29,7 +29,6 @@ class BirthInput:
     lon: float
     tz_name: str
     ayanamsa: str = "lahiri"
-    node_mode: str = "mean"  # "mean" | "true"
     year_days: float = DEFAULT_YEAR_DAYS
 
     @property
@@ -46,7 +45,7 @@ class ChartContext:
     @cached_property
     def snap(self):
         return ephem.compute_snapshot(self.inp.dt, self.inp.lat, self.inp.lon,
-                                      self.inp.ayanamsa, self.inp.node_mode)
+                                      self.inp.ayanamsa)
 
     @cached_property
     def bhavas(self):
@@ -88,7 +87,6 @@ class ChartContext:
         return {
             "engine_version": ENGINE_VERSION,
             "ayanamsa": {"name": i.ayanamsa, "value": s.ayanamsa, "dms": dms(s.ayanamsa)},
-            "node_mode": i.node_mode,
             "birth_local": i.dt.astimezone(i.tz),
             "birth_utc": i.dt,
             "timezone": i.tz_name,

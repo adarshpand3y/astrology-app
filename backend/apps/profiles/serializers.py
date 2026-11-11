@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date
 
 from rest_framework import serializers
 
@@ -10,15 +10,13 @@ from .models import BirthProfile
 
 # de440s.bsp coverage, with a margin for dasha/panchang searches
 MIN_DATE, MAX_DATE = date(1850, 1, 1), date(2149, 12, 31)
-UNKNOWN_TIME_DEFAULT = time(12, 0)
 
-BIRTH_FIELDS = ("birth_date", "birth_time", "latitude", "longitude", "tz_name", "ayanamsa", "node_mode")
+BIRTH_FIELDS = ("birth_date", "birth_time", "latitude", "longitude", "tz_name", "ayanamsa")
 
 
 class BirthProfileSerializer(serializers.ModelSerializer):
     place_id = serializers.PrimaryKeyRelatedField(
         source="place", queryset=Place.objects.all(), required=False, allow_null=True)
-    birth_time = serializers.TimeField(required=False, allow_null=True)
     latitude = serializers.FloatField(min_value=-90, max_value=90, required=False)
     longitude = serializers.FloatField(min_value=-180, max_value=180, required=False)
     tz_name = serializers.CharField(max_length=64, required=False)
@@ -27,9 +25,9 @@ class BirthProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = BirthProfile
         fields = [
-            "id", "name", "gender", "relation", "birth_date", "birth_time", "time_known",
+            "id", "name", "gender", "relation", "birth_date", "birth_time",
             "place_id", "place_label", "latitude", "longitude", "tz_name",
-            "utc_offset_minutes", "birth_utc", "ayanamsa", "node_mode", "notes", "goals", "goals_chosen_at",
+            "utc_offset_minutes", "birth_utc", "ayanamsa", "notes", "goals", "goals_chosen_at",
             "created_at", "updated_at",
         ]
         # Goals are set through PUT /remedies/goals/?profile=<id>, which also suggests their remedies.
@@ -58,15 +56,6 @@ class BirthProfileSerializer(serializers.ModelSerializer):
             validate_tz(attrs["tz_name"])
         elif not get("tz_name") or {"latitude", "longitude"} & attrs.keys():
             attrs["tz_name"] = resolve_timezone(get("latitude"), get("longitude"))
-
-        time_known = get("time_known")
-        if time_known is None:
-            time_known = True
-        if get("birth_time") is None:
-            if time_known:
-                raise serializers.ValidationError(
-                    {"birth_time": "Birth time is required (or set time_known=false)."})
-            attrs["birth_time"] = UNKNOWN_TIME_DEFAULT  # noon is the conventional fallback
 
         if get("birth_date") is None:
             raise serializers.ValidationError({"birth_date": "This field is required."})
