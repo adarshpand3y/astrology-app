@@ -126,6 +126,11 @@ def test_me_and_change_password(authed):
     assert r.status_code == 200 and r.data["email"] == "asha@example.com"
     r = authed.patch("/api/v1/auth/me/", {"full_name": "Asha"}, format="json")
     assert r.data["full_name"] == "Asha"
+    assert r.data["experience"] == ""  # not asked yet
+    r = authed.patch("/api/v1/auth/me/", {"experience": "beginner"}, format="json")
+    assert r.status_code == 200 and r.data["experience"] == "beginner"
+    r = authed.patch("/api/v1/auth/me/", {"experience": "guru"}, format="json")
+    assert r.status_code == 400
     r = authed.post("/api/v1/auth/change-password/", {"old_password": "wrong", "new_password": "Xx-123456789"},
                     format="json")
     assert r.status_code == 400

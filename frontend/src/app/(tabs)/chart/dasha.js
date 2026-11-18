@@ -6,6 +6,7 @@ import { ProIcon } from '../../../components/Icons';
 import { BackLink, Bar, Card, ErrorView, GlyphDot, Loading, ProLock, Row, Screen, T } from '../../../components/ui';
 import { useAccount, useBilling, useChart, useDashaCurrent, useDashaLevel } from '../../../hooks/data';
 import { useI18n } from '../../../i18n';
+import { useExperience } from '../../../state/experience';
 import { useTheme } from '../../../theme';
 import { dashaDate, displayDate, displayTime, duration, progress } from '../../../utils/format';
 
@@ -20,7 +21,9 @@ export default function Dasha() {
   const isPro = !!billing.data?.is_pro;
   const chart = useChart(profileId);
   const current = useDashaCurrent(profileId);
-  const [path, setPath] = useState([]);
+  const { dashaDepth } = useExperience(); // how many dasha levels this user's experience shows
+  const [picked, setPath] = useState([]);
+  const path = picked.slice(0, dashaDepth - 1);
   const level = useDashaLevel(profileId, path.join('/'));
   const [now] = useState(() => Date.now());
   const levels = t('dasha.levels');
@@ -31,7 +34,7 @@ export default function Dasha() {
     setPath(next);
   };
 
-  const chain = current.data?.periods || [];
+  const chain = (current.data?.periods || []).slice(0, dashaDepth);
   const birth = chart.data?.meta?.birth_utc;
   const kids = level.data?.periods || [];
   const L = path.length;
@@ -39,7 +42,8 @@ export default function Dasha() {
   const spanB = L ? Date.parse(level.data?.parent?.end) : Date.parse(kids[kids.length - 1]?.end);
   const status = (p) => (Date.parse(p.end) <= now ? 'past' : Date.parse(p.start) > now ? 'ahead' : 'now');
   const startOf = (p) => (L === 0 && birth && Date.parse(p.start) < Date.parse(birth) ? birth : p.start);
-  const drill = L < 4;
+  const drill = L < Math.min(4, dashaDepth - 1);
+  const capped = L >= dashaDepth - 1 && L < 4; // stopped by experience level, not the end of the tree
 
   return (
     <Screen refreshing={level.refreshing} onRefresh={() => { level.refetch(); current.refetch(); }}>
@@ -165,7 +169,7 @@ export default function Dasha() {
             );
           })}
           <T v="tiny" style={{ textAlign: 'center', marginTop: 10 }}>
-            {drill ? t('dasha.drillHint', { level: levels[L + 1] }) : t('dasha.deepest')}
+            {drill ? t('dasha.drillHint', { level: levels[L + 1] }) : capped ? '' : t('dasha.deepest')}
           </T>
         </>
       ) : null}

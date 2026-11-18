@@ -10,6 +10,7 @@ import { brand } from '../../../config/env';
 import { useAccount, useBilling, useChart, useDashaCurrent, useStrength, useVarga } from '../../../hooks/data';
 import { useI18n } from '../../../i18n';
 import { PLANET_CODES } from '../../../i18n/terms';
+import { useExperience } from '../../../state/experience';
 import { usePrefs } from '../../../state/PrefsContext';
 import { useTheme } from '../../../theme';
 
@@ -118,7 +119,10 @@ export default function Kundali() {
   const current = useDashaCurrent(profileId);
   const billing = useBilling();
   const [style, setStyle] = useState(null);
-  const [varga, setVarga] = useState('D1');
+  const { show } = useExperience();
+  const vargasOn = show('vargas'); // D9 and the D2–D60 strip
+  const [picked, setVarga] = useState('D1');
+  const varga = vargasOn ? picked : 'D1';
   const [house, setHouse] = useState(null);
   // A chart cached before upgrading to Pro holds only D1: fetch the picked division on its own.
   const extra = useVarga(profileId, varga, varga === 'D1' || !chart.data || !!chart.data.vargas[varga]);
@@ -169,12 +173,14 @@ export default function Kundali() {
 
       {brand.features.southIndianChart ? (
         <Seg options={[{ value: 'north', label: t('chart.north') }, { value: 'south', label: t('chart.south') }]}
-          value={chartStyle} onChange={setStyle} style={{ marginBottom: 10 }} />
+          value={chartStyle} onChange={setStyle} style={{ marginBottom: vargasOn ? 10 : 18 }} />
       ) : null}
-      <Seg options={[{ value: 'D1', label: t('chart.d1') }, { value: 'D9', label: t('chart.d9') }]}
-        value={['D1', 'D9'].includes(varga) ? varga : null} onChange={pickVarga}
-        lockedValues={isPro ? [] : ['D9']} style={{ marginBottom: brand.features.moreDivisions ? 10 : 18 }} />
-      {brand.features.moreDivisions ? <DivisionStrip varga={varga} isPro={isPro} onPick={pickVarga} /> : null}
+      {vargasOn ? (
+        <Seg options={[{ value: 'D1', label: t('chart.d1') }, { value: 'D9', label: t('chart.d9') }]}
+          value={['D1', 'D9'].includes(varga) ? varga : null} onChange={pickVarga}
+          lockedValues={isPro ? [] : ['D9']} style={{ marginBottom: brand.features.moreDivisions ? 10 : 18 }} />
+      ) : null}
+      {vargasOn && brand.features.moreDivisions ? <DivisionStrip varga={varga} isPro={isPro} onPick={pickVarga} /> : null}
 
       <Card pad={18} shadow>
         {vargaPending ? (
@@ -200,9 +206,11 @@ export default function Kundali() {
 
       <EntryCard icon="timeline-clock-outline" title={t('chart.dashaTitle')} sub={chain ? t('chart.dashaSub', { chain }) : '…'}
         onPress={() => router.push('/chart/dasha')} />
-      <EntryCard icon="arm-flex" title={t('chart.strengthTitle')}
-        sub={s ? (s.weak_planets || s.weak_houses ? t('chart.strengthSub', { p: s.weak_planets, h: s.weak_houses }) : t('chart.strengthOk')) : '…'}
-        onPress={() => router.push('/chart/strength')} />
+      {show('strength') ? (
+        <EntryCard icon="arm-flex" title={t('chart.strengthTitle')}
+          sub={s ? (s.weak_planets || s.weak_houses ? t('chart.strengthSub', { p: s.weak_planets, h: s.weak_houses }) : t('chart.strengthOk')) : '…'}
+          onPress={() => router.push('/chart/strength')} />
+      ) : null}
       {brand.features.birthDetails ? (
         <EntryCard icon="card-account-details-outline" title={t('chart.detailsTitle')} sub={t('chart.detailsSub')} onPress={() => router.push('/chart/details')} />
       ) : null}

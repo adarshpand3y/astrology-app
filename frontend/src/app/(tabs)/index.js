@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { LocationPicker } from '../../components/LocationPicker';
 import { SkyNow } from '../../components/SkyNow';
+import { useExperience } from '../../state/experience';
 import {
   Avatar, Bar, Button, Card, Empty, ErrorView, GradientBadge, Loading, Pill, Row, Screen, Sheet, SoftPanel, T, WindowRow,
 } from '../../components/ui';
@@ -107,7 +108,8 @@ function HomeContent() {
   const router = useRouter();
   const { user, updateMe } = useAuth();
   const { data, error, loading, refreshing, refetch } = useHome();
-  const [whyOpen, setWhyOpen] = useState(true);
+  const { show } = useExperience();
+  const [whyOpen, setWhyOpen] = useState(() => show('insightWhyOpen'));
   const [placeOpen, setPlaceOpen] = useState(false);
 
   if (loading) return <Screen><Loading /></Screen>;
@@ -214,7 +216,7 @@ function HomeContent() {
       {brand.features.vratCalendar && data.festivals?.length ? <FestivalGlimpse festivals={data.festivals} /> : null}
 
       {/* every graha now, with retrograde / combust advice */}
-      <SkyNow sky={data.sky} city={data.location.city} />
+      {show('skyNow') ? <SkyNow sky={data.sky} city={data.location.city} /> : null}
 
       {/* today's windows */}
       <Row style={{ justifyContent: 'space-between', marginTop: 22, marginBottom: 11, marginHorizontal: 2 }}>

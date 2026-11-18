@@ -9,11 +9,13 @@ import { useAuth } from '../../state/AuthContext';
 export default function NewProfile() {
   const router = useRouter();
   const { t } = useI18n();
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, updateMe } = useAuth();
   return (
     <ProfileForm
       title={t('form.newTitle')}
-      onSubmit={async (body) => {
+      onSubmit={async (body, { experience }) => {
+        // The experience level is account-wide. Saved first so a failure here can't leave a duplicate chart on retry.
+        if (experience && experience !== user?.experience) await updateMe({ experience });
         const p = await profilesApi.create(body);
         invalidate('profiles');
         if (!user?.active_profile_id) await refreshUser(); // first chart becomes the active one

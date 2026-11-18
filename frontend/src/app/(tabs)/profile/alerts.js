@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 
 import { alertsApi } from '../../../api/endpoints';
-import { AlertToggles } from '../../../components/Preferences';
+import { ALERT_FIELDS, AlertToggles } from '../../../components/Preferences';
 import { BackLink, Button, ErrorView, Loading, Screen, T } from '../../../components/ui';
 import { invalidate, setCached } from '../../../hooks/useApi';
 import { useAlertPrefs } from '../../../hooks/data';
@@ -12,6 +12,7 @@ import {
   canScheduleExactAlarms, notificationsAllowed, notificationsSupported, openExactAlarmSettings, requestPermission,
   syncSchedule,
 } from '../../../notifications';
+import { useExperience } from '../../../state/experience';
 import { useTheme } from '../../../theme';
 
 export default function Alerts() {
@@ -19,6 +20,7 @@ export default function Alerts() {
   const { t } = useI18n();
   const router = useRouter();
   const prefs = useAlertPrefs();
+  const { show } = useExperience();
   const [allowed, setAllowed] = useState(true);
   const [exact, setExact] = useState(true);
 
@@ -62,7 +64,8 @@ export default function Alerts() {
       ) : null}
 
       <T v="eyebrow" style={{ marginHorizontal: 2, marginBottom: 10 }}>{t('alerts.what')}</T>
-      <AlertToggles prefs={p} onToggle={toggle} />
+      <AlertToggles prefs={p} onToggle={toggle}
+        fields={show('advancedAlerts') ? ALERT_FIELDS : ALERT_FIELDS.filter((f) => f !== 'transit' && f !== 'sade_sati')} />
     </Screen>
   );
 }

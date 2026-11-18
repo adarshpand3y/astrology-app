@@ -6,7 +6,8 @@ import { profilesApi } from '../../api/endpoints';
 import { DateTimeField } from '../../components/DateTimeField';
 import { LocationPicker } from '../../components/LocationPicker';
 import { OnboardingScreen } from '../../components/Onboarding';
-import { Button, ErrorView, Field, Row } from '../../components/ui';
+import { ExperiencePicker } from '../../components/Preferences';
+import { Button, ErrorView, Field, Row, T } from '../../components/ui';
 import { brand } from '../../config/env';
 import { invalidate } from '../../hooks/useApi';
 import { useI18n } from '../../i18n';
@@ -23,6 +24,7 @@ export default function OnboardingProfile() {
   const [tob, setTob] = useState(null);
   const [birthPlace, setBirthPlace] = useState(null);
   const [livePlace, setLivePlace] = useState(user?.current_place ? { id: user.current_place.id, label: user.current_place.label } : null);
+  const [experience, setExperience] = useState(user?.experience || '');
   const [created, setCreated] = useState(false);
   const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -35,11 +37,12 @@ export default function OnboardingProfile() {
     tob: !tob ? t('auth.timeRequired') : server.birth_time,
     birthPlace: !birthPlace ? t('auth.placeRequired') : server.place_id,
     livePlace: !livePlace ? t('auth.placeRequired') : server.current_place_id,
+    experience: !experience ? t('experience.required') : server.experience,
   } : {};
 
   const submit = async () => {
     setTried(true);
-    if (!name.trim() || !dob || !tob || !birthPlace || !livePlace) return;
+    if (!name.trim() || !dob || !tob || !birthPlace || !livePlace || !experience) return;
     setBusy(true);
     setError(null);
     try {
@@ -54,7 +57,7 @@ export default function OnboardingProfile() {
         invalidate('profiles');
       }
       // The first chart becomes the active one; this also refreshes the user.
-      await updateMe({ full_name: name.trim(), current_place_id: livePlace.id });
+      await updateMe({ full_name: name.trim(), current_place_id: livePlace.id, experience });
       router.replace('/onboarding/goals');
     } catch (e) {
       setError(e);
@@ -74,6 +77,11 @@ export default function OnboardingProfile() {
         <LocationPicker label={t('auth.birthPlace')} icon="pin" value={birthPlace} onChange={setBirthPlace} error={errs.birthPlace} />
         <LocationPicker label={t('auth.livePlace')} hint={t('auth.livePlaceHint')} icon="target" value={livePlace}
           onChange={setLivePlace} error={errs.livePlace} />
+        <View>
+          <T v="label" style={{ marginBottom: 4 }}>{t('experience.question')}</T>
+          <T v="caption" style={{ marginBottom: 10 }}>{t('experience.sub')}</T>
+          <ExperiencePicker value={experience} onChange={setExperience} error={errs.experience} />
+        </View>
       </View>
       <Button title={t('onboarding.profileCta')} onPress={submit} loading={busy} style={{ marginTop: 24, paddingVertical: 16 }} />
     </OnboardingScreen>

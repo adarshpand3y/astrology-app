@@ -1,7 +1,9 @@
-import { Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 
 import { brand } from '../config/env';
 import { LANGUAGE_NAMES, LANGUAGES, useI18n } from '../i18n';
+import { useAuth } from '../state/AuthContext';
+import { LEVELS } from '../state/experience';
 import { usePrefs } from '../state/PrefsContext';
 import { useTheme } from '../theme';
 import { clock } from '../utils/format';
@@ -33,6 +35,56 @@ export function AppearanceSettings() {
             options={[{ value: 'north', label: t('settings.north') }, { value: 'south', label: t('settings.south') }]} />
         </>
       ) : null}
+    </>
+  );
+}
+
+/** Four choices for how much astrology the user knows; `value` may be '' (not chosen yet). */
+export function ExperiencePicker({ value, onChange, error }) {
+  const th = useTheme();
+  const { t } = useI18n();
+  return (
+    <View>
+      <View style={{ backgroundColor: th.c.surface, borderWidth: 1, borderColor: error ? th.kind.bad.solid : th.c.hair, borderRadius: 18, overflow: 'hidden' }}>
+        {LEVELS.map((l, i) => {
+          const on = value === l;
+          return (
+            <Pressable key={l} onPress={() => onChange(l)} accessibilityRole="radio" accessibilityState={{ checked: on }}
+              style={{ paddingVertical: 13, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: th.c.hair, backgroundColor: on ? th.soft(0.1) : 'transparent' }}>
+              <Row gap={12}>
+                <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: on ? th.c.accent : th.c.hair2, alignItems: 'center', justifyContent: 'center' }}>
+                  {on ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: th.c.accent }} /> : null}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <T weight={600} style={{ fontSize: 14 }}>{t(`experience.${l}`)}</T>
+                  <T v="caption" style={{ marginTop: 1 }}>{t(`experience.${l}Sub`)}</T>
+                </View>
+              </Row>
+            </Pressable>
+          );
+        })}
+      </View>
+      {error ? <T v="caption" style={{ color: th.kind.bad.solid, marginTop: 6 }}>{error}</T> : null}
+    </View>
+  );
+}
+
+/** Settings: change the account's experience level (saved to the server, applied at once). */
+export function ExperienceSettings() {
+  const { t } = useI18n();
+  const { user, setUser, updateMe } = useAuth();
+  const change = (experience) => {
+    const before = user;
+    setUser({ ...user, experience }); // apply immediately
+    updateMe({ experience }).catch((e) => {
+      setUser(before);
+      Alert.alert(t('common.unknownError'), e.message);
+    });
+  };
+  return (
+    <>
+      <T v="small" style={{ marginBottom: 12 }}>{t('experience.settingsSub')}</T>
+      <ExperiencePicker value={user?.experience || 'advanced'} onChange={change} />
     </>
   );
 }

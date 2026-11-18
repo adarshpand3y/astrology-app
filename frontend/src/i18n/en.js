@@ -240,6 +240,15 @@ export default {
     deleteWarning: 'This permanently deletes your account and every chart. Enter your password to confirm.',
     passwordChanged: 'Password changed.', about: 'About', version: 'Version',
   },
+  experience: {
+    title: 'Astrology experience', question: 'How familiar are you with astrology?',
+    sub: "We'll show as much detail as suits you. You can change this any time in Settings.",
+    settingsSub: 'Choose how much detail the app shows.', required: 'Please choose one.',
+    none: 'New to astrology', noneSub: 'Keep it simple: plain guidance, no technical tables.',
+    beginner: 'Beginner', beginnerSub: 'I know my rashi and a few basics.',
+    intermediate: 'Intermediate', intermediateSub: 'I read kundlis, dashas and navamsa.',
+    advanced: 'Advanced', advancedSub: 'Show everything: shadbala, avasthas, all vargas.',
+  },
   paywall: {
     title: 'Read your sky,\nevery single day', sub: '{app} Pro unlocks the decision assistant, full charts, and remedies tracking.',
     monthly: 'Monthly', annual: 'Annual', perYear: '/yr', perMonth: '/mo', annualNote: '≈ {m} / month · save {p}%',

@@ -10,6 +10,7 @@ import { brand } from '../../../config/env';
 import { invalidate } from '../../../hooks/useApi';
 import { useAccount, useStrength } from '../../../hooks/data';
 import { useI18n } from '../../../i18n';
+import { useExperience } from '../../../state/experience';
 import { useTheme } from '../../../theme';
 import { num } from '../../../utils/format';
 
@@ -44,6 +45,7 @@ export default function Strength() {
 
 function Shadbala({ data, open, setOpen }) {
   const th = useTheme();
+  const detail = useExperience().show('strengthDetail');
   const { t, tr } = useI18n();
   const router = useRouter();
   const s = data.summary;
@@ -118,6 +120,7 @@ function Shadbala({ data, open, setOpen }) {
             </Pressable>
             {isOpen ? (
               <View>
+                {detail ? (<>
                 <T v="eyebrow" style={{ fontSize: 9, marginTop: 16, marginBottom: 8 }}>{t('strength.sixSources')}</T>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 9, columnGap: 16 }}>
                   {p.sources.map((c) => (
@@ -132,6 +135,7 @@ function Shadbala({ data, open, setOpen }) {
                     </View>
                   ))}
                 </View>
+                </>) : null}
                 <SoftPanel n={0.1} style={{ borderRadius: 14, marginTop: 16, paddingVertical: 13 }}>
                   <PanelHeading>{t('strength.whatToDo')}</PanelHeading>
                   <T v="small" style={{ marginBottom: 6, color: th.c.ink2 }}>{p.advice.head}</T>
@@ -151,6 +155,7 @@ function Shadbala({ data, open, setOpen }) {
 
 function Bhavabala({ data, selected, setSelected, onLord }) {
   const th = useTheme();
+  const detail = useExperience().show('strengthDetail');
   const { t, tr } = useI18n();
   const houses = data.houses;
   const min = data.summary.house_minimum;
@@ -208,14 +213,14 @@ function Bhavabala({ data, selected, setSelected, onLord }) {
             <Text style={[th.font.ui(600), { fontSize: 10, color: k.solid }]}>{h.status}</Text>
           </View>
         </Row>
-        <Row gap={8} align="stretch" style={{ marginTop: 14 }}>
+        {detail ? <Row gap={8} align="stretch" style={{ marginTop: 14 }}>
           {h.components.filter((c) => c.key !== 'other' || Math.abs(c.rupas) > 0.05).map((c) => (
             <View key={c.key} style={{ flex: 1, backgroundColor: th.c.muted, borderRadius: 11, paddingVertical: 9, paddingHorizontal: 10 }}>
               <T v="tiny" style={{ fontSize: 10, lineHeight: 13 }}>{c.name}</T>
               <T v="mono" style={{ fontSize: 13, color: th.c.ink, marginTop: 3, fontWeight: '600' }}>{num(c.rupas, 1)}</T>
             </View>
           ))}
-        </Row>
+        </Row> : null}
         <Pressable onPress={() => onLord(h.lord)} style={{
           flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, paddingTop: 10, paddingBottom: 2,
           borderTopWidth: 1, borderTopColor: th.c.hair,

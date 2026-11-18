@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { BackLink, Card, ErrorView, GlyphDot, Loading, Row, Screen, Seg, T, Tag } from '../../../components/ui';
 import { useAccount, useChart } from '../../../hooks/data';
 import { useI18n } from '../../../i18n';
+import { useExperience } from '../../../state/experience';
 import { useTheme } from '../../../theme';
 import { clock, num, range } from '../../../utils/format';
 
@@ -24,23 +25,25 @@ export default function BirthDetails() {
   const { t } = useI18n();
   const { profileId } = useAccount();
   const { data, error, loading, refreshing, refetch } = useChart(profileId);
-  const [tab, setTab] = useState('planets');
+  const deep = useExperience().show('detailsDeep'); // expanded planet fields, maitri matrix, Avakhada
+  const [picked, setTab] = useState('planets');
+  const tab = !deep && picked === 'avakhada' ? 'planets' : picked;
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
       <BackLink label={t('chart.title')} />
       <T v="screenTitle" style={{ paddingHorizontal: 2, paddingBottom: 14 }}>{t('details.title')}</T>
       <Seg options={[{ value: 'planets', label: t('details.planets') }, { value: 'panchang', label: t('panchang.title') },
-        { value: 'avakhada', label: t('details.avakhada') }]} value={tab} onChange={setTab} style={{ marginBottom: 16 }} />
+        ...(deep ? [{ value: 'avakhada', label: t('details.avakhada') }] : [])]} value={tab} onChange={setTab} style={{ marginBottom: 16 }} />
       {loading ? <Loading /> : null}
       <ErrorView error={error} onRetry={refetch} />
-      {data && tab === 'planets' ? <Planets chart={data} /> : null}
+      {data && tab === 'planets' ? <Planets chart={data} deep={deep} /> : null}
       {data && tab === 'panchang' ? <BirthPanchang chart={data} /> : null}
       {data && tab === 'avakhada' ? <Avakhada chart={data} /> : null}
     </Screen>
   );
 }
 
-function Planets({ chart }) {
+function Planets({ chart, deep }) {
   const th = useTheme();
   const { t, tr } = useI18n();
   const [open, setOpen] = useState(null);
@@ -62,7 +65,7 @@ function Planets({ chart }) {
         const isOpen = open === p.code;
         const tone = GOOD.includes(p.dignity) ? 'good' : BAD.includes(p.dignity) ? 'bad' : undefined;
         return (
-          <Pressable key={p.code} onPress={() => setOpen(isOpen ? null : p.code)} style={{
+          <Pressable key={p.code} disabled={!deep} onPress={() => setOpen(isOpen ? null : p.code)} style={{
             backgroundColor: th.c.surface, borderRadius: 17, paddingVertical: 14, paddingHorizontal: 15, marginBottom: 9,
             borderWidth: 1, borderColor: isOpen ? th.c.accent : th.c.hair,
           }}>
@@ -82,7 +85,7 @@ function Planets({ chart }) {
                 </Row>
               </View>
             </Row>
-            {isOpen ? (
+            {deep && isOpen ? (
               <View style={{ marginTop: 10 }}>
                 <KV rows={[
                   [t('details.degree'), `${num(p.longitude, 4)}°`],
@@ -97,6 +100,7 @@ function Planets({ chart }) {
           </Pressable>
         );
       })}
+      {deep ? (<>
       <T v="section" style={{ marginTop: 14, marginBottom: 10, marginHorizontal: 2 }}>{t('details.relationships')}</T>
       <Card pad={10}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -116,6 +120,7 @@ function Planets({ chart }) {
           </View>
         </ScrollView>
       </Card>
+      </>) : null}
     </>
   );
 }

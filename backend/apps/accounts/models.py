@@ -28,7 +28,13 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    class Experience(models.TextChoices):
+        NONE = "none", "New to astrology"
+        BEGINNER = "beginner", "Beginner"
+        INTERMEDIATE = "intermediate", "Intermediate"
+        ADVANCED = "advanced", "Advanced"
+
+    id =models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=150, blank=True)
     is_email_verified = models.BooleanField(default=False)
@@ -41,6 +47,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Whose chart the app reads (one of the user's birth profiles).
     active_profile = models.ForeignKey("profiles.BirthProfile", null=True, blank=True,
                                        on_delete=models.SET_NULL, related_name="+")
+    # How much astrology the user knows; the app hides detail accordingly. Blank = not asked yet.
+    experience = models.CharField(max_length=16, choices=Experience.choices, blank=True, default="")
 
     objects = UserManager()
 

@@ -4,7 +4,7 @@ import { Alert, View } from 'react-native';
 
 import { authApi } from '../../../api/endpoints';
 import { LocationPicker } from '../../../components/LocationPicker';
-import { AppearanceSettings } from '../../../components/Preferences';
+import { AppearanceSettings, ExperienceSettings } from '../../../components/Preferences';
 import { BackLink, Button, Card, ErrorView, PasswordField, Row, Screen, T } from '../../../components/ui';
 import { brand } from '../../../config/env';
 import { useI18n } from '../../../i18n';
@@ -31,6 +31,10 @@ export default function Settings() {
 
       <Section title={t('settings.appearance')}>
         <AppearanceSettings />
+      </Section>
+
+      <Section title={t('experience.title')}>
+        <ExperienceSettings />
       </Section>
 
       <Section title={t('settings.location')}>

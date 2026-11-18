@@ -25,7 +25,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "email", "full_name", "is_email_verified", "date_joined",
-                  "current_place", "current_place_id", "active_profile_id", "goals", "needs_onboarding"]
+                  "current_place", "current_place_id", "active_profile_id", "goals", "experience",
+                  "needs_onboarding"]
         read_only_fields = ["id", "email", "is_email_verified", "date_joined"]
 
     def get_goals(self, user) -> list[str]:

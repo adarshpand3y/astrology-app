@@ -4,10 +4,12 @@ import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-nat
 
 import { brand } from '../config/env';
 import { useI18n } from '../i18n';
+import { useAuth } from '../state/AuthContext';
 import { useTheme } from '../theme';
 import { fieldErrors, fromApiDateTime, toApiDate, toApiTime } from '../utils/format';
 import { DateTimeField } from './DateTimeField';
 import { LocationPicker } from './LocationPicker';
+import { ExperiencePicker } from './Preferences';
 import { Button, Chip, ErrorView, Field, Row, Screen, Seg, T } from './ui';
 
 const RELATIONS = ['self', 'family', 'friend', 'client', 'other'];
@@ -17,12 +19,15 @@ export function ProfileForm({ initial, title, onSubmit }) {
   const th = useTheme();
   const { t } = useI18n();
   const router = useRouter();
+  const { user } = useAuth();
   const [name, setName] = useState(initial?.name || '');
   const [relation, setRelation] = useState(initial?.relation || 'family');
   const [gender, setGender] = useState(initial?.gender || '');
   const [dob, setDob] = useState(() => (initial ? fromApiDateTime(initial.birth_date, initial.birth_time) : null));
   const [tob, setTob] = useState(() => (initial ? fromApiDateTime(initial.birth_date, initial.birth_time) : null));
   const [place, setPlace] = useState(initial ? { id: initial.place_id, label: initial.place_label } : null);
+  // Asked again when adding a chart (account-wide; pre-filled with the current level).
+  const [experience, setExperience] = useState(user?.experience || 'advanced');
   const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -39,7 +44,7 @@ export function ProfileForm({ initial, title, onSubmit }) {
     setBusy(true);
     setError(null);
     try {
-      await onSubmit(body);
+      await onSubmit(body, initial ? {} : { experience });
     } catch (e) {
       setError(e);
       setBusy(false);
@@ -78,6 +83,13 @@ export function ProfileForm({ initial, title, onSubmit }) {
           {server.birth_date || server.birth_time ? <T v="caption" style={{ color: th.kind.bad.solid }}>{server.birth_date || server.birth_time}</T> : null}
           <LocationPicker label={t('form.place')} value={place?.label ? place : null} onChange={setPlace}
             error={tried && !place ? t('auth.placeRequired') : null} />
+          {!initial ? (
+            <View>
+              <T v="label" style={{ marginBottom: 4 }}>{t('experience.question')}</T>
+              <T v="caption" style={{ marginBottom: 10 }}>{t('experience.sub')}</T>
+              <ExperiencePicker value={experience} onChange={setExperience} />
+            </View>
+          ) : null}
         </View>
         <Button title={t('form.save')} onPress={submit} loading={busy} style={{ marginTop: 24 }} />
       </Screen>

@@ -8,6 +8,7 @@ import { Pressable, Text, View } from 'react-native';
 import { brand } from '../config/env';
 import { useI18n } from '../i18n';
 import { GLYPH } from '../i18n/terms';
+import { useExperience } from '../state/experience';
 import { usePrefs } from '../state/PrefsContext';
 import { useTheme } from '../theme';
 import { shortDate } from '../utils/format';
@@ -128,9 +129,12 @@ function TransitChart({ sky, city }) {
 export function SkyNow({ sky, city }) {
   const th = useTheme();
   const { t, tr, lang } = useI18n();
-  const [filter, setFilter] = useState('all');
+  const { show } = useExperience();
+  const detail = show('skyDetail'); // transit chart, degrees + pada, Gandmool filter
+  const [chosen, setFilter] = useState('all');
   const [open, setOpen] = useState(null);
   if (!sky) return null;
+  const filter = !detail && chosen === 'gandmool' ? 'all' : chosen;
 
   const hi = lang === 'hi';
   const counts = {
@@ -157,22 +161,25 @@ export function SkyNow({ sky, city }) {
   return (
     <View style={{ marginTop: 22 }}>
       <Row style={{ justifyContent: 'space-between', marginHorizontal: 2, marginBottom: 11 }}>
-        <T v="section">{t('home.skyTitle')}</T>
+        <T v="section">{t(detail ? 'home.skyTitle' : 'home.skyTableTitle')}</T>
         <LiveBadge />
       </Row>
 
-      <TransitChart sky={sky} city={city} />
-
-      <Row style={{ justifyContent: 'space-between', marginHorizontal: 2, marginTop: 10, marginBottom: 11 }}>
-        <T v="section">{t('home.skyTableTitle')}</T>
-        <LiveBadge />
-      </Row>
+      {detail ? (
+        <>
+          <TransitChart sky={sky} city={city} />
+          <Row style={{ justifyContent: 'space-between', marginHorizontal: 2, marginTop: 10, marginBottom: 11 }}>
+            <T v="section">{t('home.skyTableTitle')}</T>
+            <LiveBadge />
+          </Row>
+        </>
+      ) : null}
       <Card radius={20} pad={0} shadow="card" style={{ overflow: 'hidden' }}>
         <Row gap={6} style={{ flexWrap: 'wrap', paddingVertical: 11, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: th.c.hair }}>
           {pill('all', t('home.skyAll', { n: counts.all }))}
           {pill('retrograde', t('home.skyRetroFilter', { n: counts.retrograde }))}
           {pill('combust', t('home.skyCombustFilter', { n: counts.combust }))}
-          {pill('gandmool', t('home.skyGandmoolFilter', { n: counts.gandmool }))}
+          {detail ? pill('gandmool', t('home.skyGandmoolFilter', { n: counts.gandmool })) : null}
         </Row>
 
         {rows.map((p, i) => {
@@ -208,8 +215,10 @@ export function SkyNow({ sky, city }) {
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <T v="mono" weight={600} style={{ fontSize: 13, color: th.c.ink }}>{dms(p.degree)}</T>
-                  <T v="tiny" style={{ fontSize: 10, marginTop: 1 }}>{tr('nakshatra', p.nakshatra)} · {t('home.skyPada', { n: p.pada })}</T>
+                  {detail ? <T v="mono" weight={600} style={{ fontSize: 13, color: th.c.ink }}>{dms(p.degree)}</T> : null}
+                  <T v="tiny" style={{ fontSize: 10, marginTop: 1 }}>
+                    {tr('nakshatra', p.nakshatra)}{detail ? ` · ${t('home.skyPada', { n: p.pada })}` : ''}
+                  </T>
                 </View>
                 <Text style={{
                   width: 22, textAlign: 'center', fontSize: 22, lineHeight: 24, color: th.c.ink2, transform: [{ rotate: isOpen ? '180deg' : '0deg' }],
